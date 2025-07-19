@@ -560,7 +560,7 @@ export default {
             title: 'Nessus Vulnerability Scanner',
             description: 'Import vulnerabilities from Nessus scan results (.nessus, .xml, or .csv format)',
             selectFile: 'Select Nessus output file (.nessus, .xml, .csv)',
-            dragDropTitle: 'Drop Nessus file here',
+            dragDropTitle: 'Drop Nessus files here',
             dragDropSubtitle: 'or click to browse files',
             supportedFormats: 'Supported formats: .nessus, .xml, .csv',
             import: 'Import Selected Vulnerabilities',

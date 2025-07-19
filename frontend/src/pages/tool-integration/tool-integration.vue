@@ -60,22 +60,26 @@
                           ref="nessusFileInput"
                           type="file"
                           accept=".nessus,.xml,.csv"
+                          multiple
                           style="display: none"
                           @change="onNessusFileSelected"
                         />
                         
-                        <!-- Selected file info -->
-                        <div v-if="nessusFile" class="q-mt-md">
-                          <q-chip
-                            :label="nessusFile.name"
-                            color="primary"
-                            removable
-                            @remove="nessusFile = null"
-                          >
-                            <template v-slot:avatar>
-                              <q-icon name="fa fa-file" />
-                            </template>
-                          </q-chip>
+                        <!-- Selected files info -->
+                        <div v-if="nessusFiles.length > 0" class="q-mt-md">
+                          <div class="text-subtitle2 q-mb-sm">Selected Files:</div>
+                          <div v-for="(file, index) in nessusFiles" :key="index" class="q-mb-xs">
+                            <q-chip
+                              :label="file.name"
+                              color="primary"
+                              removable
+                              @remove="removeFile(index)"
+                            >
+                              <template v-slot:avatar>
+                                <q-icon name="fa fa-file" />
+                              </template>
+                            </q-chip>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -262,7 +266,7 @@ export default defineComponent({
   data() {
     return {
       selectedTool: 'nessus',
-      nessusFile: null,
+      nessusFiles: [], // Change from nessusFile to array
       burpFile: null,
       customFile: null,
       importing: false,
@@ -275,8 +279,7 @@ export default defineComponent({
       auditOptions: [],
       originalFindings: [],
       totalVulnerabilities: 0,
-      sortBy: 'cvssScore', // Add this
-      sortDesc: true,      // Add this
+      fileFindingsMap: {}, // Track which findings belong to which files
       previewColumns: [
         {
           name: 'title',
@@ -333,10 +336,11 @@ export default defineComponent({
     },
 
     onNessusFileSelected(event) {
-      const file = event.target.files[0]
-      if (file) {
-        this.nessusFile = file
-        this.parseNessusFile()
+      const files = Array.from(event.target.files)
+      if (files.length > 0) {
+        // Add new files to existing array
+        this.nessusFiles.push(...files)
+        this.parseAllFiles()
       }
     },
 
@@ -344,17 +348,21 @@ export default defineComponent({
       this.isDragOver = false
       event.preventDefault()
       
-      const files = event.dataTransfer.files
+      const files = Array.from(event.dataTransfer.files)
       if (files.length > 0) {
-        const file = files[0]
-        // Check if it's a valid Nessus file
-        const fileExtension = file.name.split('.').pop().toLowerCase()
-        if (['nessus', 'xml', 'csv'].includes(fileExtension)) {
-          this.nessusFile = file
-          this.parseNessusFile()
+        // Filter valid files
+        const validFiles = files.filter(file => {
+          const fileExtension = file.name.split('.').pop().toLowerCase()
+          return ['nessus', 'xml', 'csv'].includes(fileExtension)
+        })
+        
+        if (validFiles.length > 0) {
+          // Add new files to existing array
+          this.nessusFiles.push(...validFiles)
+          this.parseAllFiles()
         } else {
           Notify.create({
-            message: 'Invalid file format. Please use .nessus, .xml, or .csv files.',
+            message: 'No valid files found. Please use .nessus, .xml, or .csv files.',
             color: 'negative',
             position: 'top-right'
           })
@@ -362,11 +370,73 @@ export default defineComponent({
       }
     },
 
+    async regroupAndSortVulnerabilities() {
+      // Collect all findings from all files
+      const allFindings = []
+      for (const findings of Object.values(this.fileFindingsMap)) {
+        allFindings.push(...findings)
+      }
+      
+      if (allFindings.length === 0) {
+        // No findings, clear everything
+        this.parsedVulnerabilities = []
+        this.selectedVulnerabilities = []
+        this.totalVulnerabilities = 0
+        return
+      }
+      
+      // Merge findings for preview (same logic as before)
+      const mergedFindings = this._mergeFindingsForPreview(allFindings)
+      
+      // Get database values for preview (wait for it to complete)
+      try {
+        const previewFindings = await this._getDatabaseValuesForPreview(mergedFindings)
+        this.parsedVulnerabilities = previewFindings
+        
+        // Sort by CVSS score in descending order
+        this.parsedVulnerabilities.sort((a, b) => {
+          const aScore = a.cvssScore || 0
+          const bScore = b.cvssScore || 0
+          return bScore - aScore
+        })
+        
+        // Clear selections since data changed
+        this.selectedVulnerabilities = []
+        
+        console.log(`Regrouped and sorted ${this.parsedVulnerabilities.length} vulnerabilities`)
+      } catch (error) {
+        console.error('Error regrouping vulnerabilities:', error)
+      }
+    },
+
+    removeFile(fileIndex) {
+      const removedFile = this.nessusFiles[fileIndex]
+      this.nessusFiles.splice(fileIndex, 1)
+      
+      // Remove from fileFindingsMap
+      if (this.fileFindingsMap[removedFile.name]) {
+        delete this.fileFindingsMap[removedFile.name]
+      }
+      
+      // Re-parse all remaining files to recalculate merging
+      if (this.nessusFiles.length > 0) {
+        this.parseAllFiles()
+      } else {
+        // No files left, clear everything immediately
+        this.parsedVulnerabilities = []
+        this.selectedVulnerabilities = []
+        this.totalVulnerabilities = 0
+        this.fileFindingsMap = {}
+      }
+      
+      console.log(`Removed file ${removedFile.name}, remaining files: ${this.nessusFiles.length}`)
+    },
+
     /**
-     * Parse Nessus file and show preview
+     * Parse all Nessus files together and show preview
      */
-    async parseNessusFile() {
-      if (!this.nessusFile) {
+    async parseAllFiles() {
+      if (this.nessusFiles.length === 0) {
         Notify.create({
           message: $t('toolIntegration.nessus.noFileSelected'),
           color: 'warning',
@@ -378,37 +448,47 @@ export default defineComponent({
       this.parsing = true
       
       try {
-        // Create parser and parse file
-        const parser = new NessusParser(null, [this.nessusFile], true, true)
-        const result = await parser.parse()
+        // Clear existing data
+        this.parsedVulnerabilities = []
+        this.selectedVulnerabilities = []
+        this.fileFindingsMap = {}
+        this.totalVulnerabilities = 0
         
-        if (result.success) {
-          // Store the original findings for import
-          this.originalFindings = parser.findings
-          
-          // Merge findings for preview
-          const mergedFindings = this._mergeFindingsForPreview(parser.findings)
-          
-          // Get database values for preview
-          this.parsedVulnerabilities = await this._getDatabaseValuesForPreview(mergedFindings)
-          
-          this.totalVulnerabilities = result.vulnsCount || parser.findings.length
-          
-          Notify.create({
-            message: $t('toolIntegration.nessus.parseSuccess', { 
-              unique: this.parsedVulnerabilities.length,
-              total: this.totalVulnerabilities 
-            }),
-            color: 'positive',
-            position: 'top-right'
-          })
-        } else {
-          throw new Error(result.error)
+        // Parse all files together with one parser to handle merging properly
+        const parser = new NessusParser(null, this.nessusFiles, true, true)
+        await parser.parse()
+        
+        // Store findings by file for tracking (simplified approach)
+        for (const file of this.nessusFiles) {
+          this.fileFindingsMap[file.name] = parser.findings
         }
-      } catch (error) {
-        console.error('Error parsing Nessus file:', error)
+        
+        // Use the parser's merged findings for preview
+        const mergedFindings = parser.findings
+        
+        // Get database values for preview
+        const previewFindings = await this._getDatabaseValuesForPreview(mergedFindings)
+        this.parsedVulnerabilities = previewFindings
+        
+        // Sort by CVSS score in descending order
+        this.parsedVulnerabilities.sort((a, b) => {
+          const aScore = a.cvssScore || 0
+          const bScore = b.cvssScore || 0
+          return bScore - aScore
+        })
+        
+        this.totalVulnerabilities = this.parsedVulnerabilities.length
+        
         Notify.create({
-          message: error.message || $t('toolIntegration.nessus.parseError'),
+          message: `Successfully parsed ${this.nessusFiles.length} file(s) with ${this.parsedVulnerabilities.length} unique vulnerabilities`,
+          color: 'positive',
+          position: 'top-right'
+        })
+        
+      } catch (error) {
+        console.error('Error parsing files:', error)
+        Notify.create({
+          message: error.message || 'Error parsing files',
           color: 'negative',
           position: 'top-right'
         })
@@ -448,24 +528,26 @@ export default defineComponent({
      * Merge a group of findings with the same title
      */
     _mergeSingleFindingGroup(findings) {
+      // Just combine scopes and pass all findings to the parser
       const initialFinding = { ...findings[0] }
       const mergedFinding = initialFinding
       
-      // Collect scopes for merging
-      const tempMergedScope = []
-      
+      // Collect all scopes/hosts from all findings
+      const allScopes = []
       for (const finding of findings) {
-        tempMergedScope.push(finding.scope)
+        if (finding.scope) {
+          allScopes.push(finding.scope)
+        }
       }
 
-      // Set scope - combine all unique scopes
-      const uniqueScopes = [...new Set(tempMergedScope)]
-      mergedFinding.scope = uniqueScopes.length > 10 
-        ? 'Multiple Targets' 
-        : uniqueScopes.join(', ')
+      // Set scope - combine all unique scopes/hosts
+      const uniqueScopes = [...new Set(allScopes)]
+      if (uniqueScopes.length > 0) {
+        mergedFinding.scope = uniqueScopes.join(', ')
+      }
 
-      // Keep the POC from the first finding (it's already properly formatted by the parser)
-      // Don't manipulate the POC anymore since the parser handles it correctly
+      // Store all original findings for the parser to handle
+      mergedFinding.allOriginalFindings = findings
       
       return mergedFinding
     },
@@ -504,21 +586,21 @@ export default defineComponent({
             
             // Use database values for CVSS and severity
             const previewFinding = {
-              ...finding,
+              ...finding,  // This keeps our merged POC and scope
               cvssv3: cvssScore,                // Numerical CVSS score
               cvssScore: cvssScore,             // Add this field for sorting
               severity: severity,               // Severity text (Critical, High, Medium, Low)
               category: vulnFromDB.category,    // Database category
-              originalFinding: finding          // Keep original for import
+              originalFinding: finding.allOriginalFindings || [finding]  // Keep the merged data
             }
             previewFindings.push(previewFinding)
           } else {
             console.log('NOT FOUND IN DB:', finding.title)
             // If not in database, use parsed values (fallback)
             previewFindings.push({
-              ...finding,
+              ...finding,  // This keeps our merged POC and scope
               cvssScore: null, // Add this field for sorting
-              originalFinding: finding
+              originalFinding: finding.allOriginalFindings || [finding]  // Keep the merged data
             })
           }
         }
@@ -593,7 +675,7 @@ export default defineComponent({
     async importNessusVulnerabilities() {
       if (this.selectedVulnerabilities.length === 0) {
         Notify.create({
-          message: $t('toolIntegration.nessus.noVulnerabilities'),
+          message: 'No vulnerabilities selected for import',
           color: 'warning',
           position: 'top-right'
         })
@@ -602,72 +684,88 @@ export default defineComponent({
 
       if (!this.selectedAudit) {
         Notify.create({
-          message: $t('toolIntegration.auditSelection.noAuditSelected'),
+          message: 'Please select an audit first',
           color: 'warning',
           position: 'top-right'
         })
         return
       }
 
-      // Show confirmation dialog
-      const auditName = this.auditOptions.find(a => a.value === this.selectedAudit)?.label || 'Unknown Audit'
-      
-      try {
-        await this.$q.dialog({
-          title: 'Confirm Import',
-          message: `Are you sure you want to import ${this.selectedVulnerabilities.length} vulnerability(ies) to the audit "${auditName}"?`,
-          cancel: true,
-          persistent: true,
-          ok: {
-            label: 'Import',
-            color: 'primary'
-          },
-          cancel: {
-            label: 'Cancel',
-            color: 'grey'
-          }
-        })
-      } catch (error) {
-        // User cancelled
-        return
-      }
+      // Get audit name for confirmation message
+      const selectedAuditOption = this.auditOptions.find(audit => audit.value === this.selectedAudit)
+      const auditName = selectedAuditOption ? selectedAuditOption.label : 'Unknown Audit'
 
-      this.importing = true
-      
       try {
-        console.log('Importing selected vulnerabilities:', this.selectedVulnerabilities.length)
-        console.log('Selected vulnerabilities:', this.selectedVulnerabilities.map(v => v.title))
+        console.log('Showing confirmation dialog...')
         
-        // Extract only the selected findings
-        const selectedFindings = this.selectedVulnerabilities.map(v => v.originalFinding)
-        
-        // Create a parser with the selected audit ID
-        const parser = new NessusParser(this.selectedAudit, [], true, false)
-        
-        // Import only the selected findings
-        const result = await parser.importSelectedFindings(selectedFindings)
-        
-        if (result.success) {
-          Notify.create({
-            message: $t('toolIntegration.nessus.importSuccess', { 
-              count: this.selectedVulnerabilities.length,
-              audit: auditName
-            }),
-            color: 'positive',
-            position: 'top-right'
+        // Use the correct Quasar dialog API with Promise
+        const confirmed = await new Promise((resolve) => {
+          this.$q.dialog({
+            title: 'Confirm Import',
+            message: `Are you sure you want to import ${this.selectedVulnerabilities.length} vulnerabilities to "${auditName}"?`,
+            ok: {
+              label: 'Import',
+              color: 'primary'
+            },
+            cancel: {
+              label: 'Cancel',
+              color: 'grey'
+            },
+            persistent: true
+          }).onOk(() => {
+            console.log('User clicked OK')
+            resolve(true)
+          }).onCancel(() => {
+            console.log('User clicked Cancel')
+            resolve(false)
+          }).onDismiss(() => {
+            console.log('Dialog dismissed')
+            resolve(false)
           })
-          
-          // Clear only the selection and audit, keep the preview
-          this.selectedVulnerabilities = []
-          this.selectedAudit = null
-        } else {
-          throw new Error(result.error)
+        })
+
+        console.log('Dialog result:', confirmed)
+
+        // Check if user confirmed
+        if (!confirmed) {
+          console.log('Import cancelled by user')
+          return
+        }
+
+        console.log('Proceeding with import...')
+        this.importing = true
+
+        // Extract all original findings for the parser to handle merging
+        const allOriginalFindings = []
+        for (const v of this.selectedVulnerabilities) {
+          if (v.originalFinding && Array.isArray(v.originalFinding)) {
+            allOriginalFindings.push(...v.originalFinding)
+          } else {
+            allOriginalFindings.push(v.originalFinding)
+          }
         }
         
+        console.log('Importing all original findings:', allOriginalFindings.length)
+        
+        // Create a parser with merge = true to handle POC creation properly
+        const parser = new NessusParser(this.selectedAudit, [], true, false)
+        
+        // Import all original findings and let the parser handle merging
+        await parser.importSelectedFindings(allOriginalFindings)
+
+        Notify.create({
+          message: 'Vulnerabilities imported successfully',
+          color: 'positive',
+          position: 'top-right'
+        })
+
+        // Clear selections after successful import
+        this.selectedVulnerabilities = []
+
       } catch (error) {
         console.error('Error importing vulnerabilities:', error)
         Notify.create({
-          message: error.message || $t('toolIntegration.nessus.importError'),
+          message: error.message || 'Error importing vulnerabilities',
           color: 'negative',
           position: 'top-right'
         })
