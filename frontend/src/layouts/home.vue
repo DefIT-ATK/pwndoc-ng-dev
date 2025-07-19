@@ -25,6 +25,13 @@
             <q-item-section>{{$t('nav.data')}}</q-item-section>
             </q-item>
 
+            <q-item to='/tool-integration' active-class="text-green">
+            <q-item-section avatar style="min-width:0" class="q-pr-sm">
+                <q-icon name="fa fa-tools" />
+            </q-item-section>
+            <q-item-section>{{$t('nav.toolIntegration')}}</q-item-section>
+            </q-item>
+
             <q-space />
 
               <q-item to='/settings' active-class="text-green">

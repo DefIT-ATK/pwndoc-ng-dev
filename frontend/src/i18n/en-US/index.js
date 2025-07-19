@@ -7,6 +7,7 @@ export default {
         audits: 'Audits',
         vulnerabilities: 'Vulnerabilities',
         data: 'Data',
+        toolIntegration: 'Tool Integration',
     },
     btn: {
         cancel: 'Cancel',
@@ -547,4 +548,58 @@ export default {
     changeRemediationColorsDescriptionComplexity: 'Change the colors used in the report to represent the different complexities of remediation',
     changeRemediationColorsDescriptionPriority: 'Change the colors used in the report to represent different remediation priorities',
     remediationColorsPriority: 'Remediation Priority colors',
-  }
+    toolIntegration: {
+        title: 'Tool Integration',
+        subtitle: 'Import vulnerabilities from various security tools',
+        tools: {
+            nessus: 'Nessus',
+            burp: 'Burp Suite',
+            custom: 'Custom Tool'
+        },
+        nessus: {
+            title: 'Nessus Vulnerability Scanner',
+            description: 'Import vulnerabilities from Nessus scan results (.nessus, .xml, or .csv format)',
+            selectFile: 'Select Nessus output file (.nessus, .xml, .csv)',
+            dragDropTitle: 'Drop Nessus file here',
+            dragDropSubtitle: 'or click to browse files',
+            supportedFormats: 'Supported formats: .nessus, .xml, .csv',
+            import: 'Import Selected Vulnerabilities',
+            parseSuccess: 'Successfully parsed {unique} unique vulnerabilities from {total} total findings',
+            parseError: 'Error parsing Nessus file',
+            importSuccess: 'Successfully imported {count} vulnerabilities to {audit}',
+            importError: 'Error importing vulnerabilities',
+            noVulnerabilities: 'No vulnerabilities selected for import'
+        },
+        burp: {
+            title: 'Burp Suite Professional',
+            description: 'Import issues from Burp Suite Professional (XML or JSON format)',
+            selectFile: 'Select Burp Suite output file',
+            import: 'Import Issues'
+        },
+        custom: {
+            title: 'Custom Tool',
+            description: 'Import from custom security tools or scripts',
+            selectFile: 'Select custom output file',
+            import: 'Import Data'
+        },
+        auditSelection: {
+            title: 'Select Target Audit',
+            selectAudit: 'Choose an audit to add findings to',
+            noAudits: 'No audits available',
+            noAuditSelected: 'Please select an audit to import vulnerabilities to'
+        },
+        preview: {
+            title: 'Import Preview',
+            description: 'Preview of {unique} unique vulnerabilities (from {total} total findings)',
+            mergeInfo: 'Duplicate vulnerabilities have been merged automatically',
+            selectAll: 'Select All',
+            deselectAll: 'Deselect All',
+            columns: {
+                title: 'Title',
+                severity: 'Severity',
+                cvss: 'CVSS',
+                category: 'Category'
+            }
+        }
+    }
+}
