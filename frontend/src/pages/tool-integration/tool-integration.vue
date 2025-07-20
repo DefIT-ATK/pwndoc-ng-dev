@@ -257,8 +257,7 @@ import { Notify } from 'quasar'
 import { $t } from '@/boot/i18n'
 import NessusParser from '@/services/parsers/nessus-parser'
 import AuditService from '@/services/audit'
-// Remove the incorrect import - CVSS31 is loaded globally via script tag
-// import CVSS31 from '@/services/cvss31' // Added import for CVSS31
+
 
 export default defineComponent({
   name: 'ToolIntegration',
@@ -277,7 +276,6 @@ export default defineComponent({
       selectedVulnerabilities: [],
       selectedAudit: null,
       auditOptions: [],
-      originalFindings: [],
       totalVulnerabilities: 0,
       fileFindingsMap: {}, // Track which findings belong to which files
       previewColumns: [
@@ -370,44 +368,6 @@ export default defineComponent({
       }
     },
 
-    async regroupAndSortVulnerabilities() {
-      // Collect all findings from all files
-      const allFindings = []
-      for (const findings of Object.values(this.fileFindingsMap)) {
-        allFindings.push(...findings)
-      }
-      
-      if (allFindings.length === 0) {
-        // No findings, clear everything
-        this.parsedVulnerabilities = []
-        this.selectedVulnerabilities = []
-        this.totalVulnerabilities = 0
-        return
-      }
-      
-      // Merge findings for preview (same logic as before)
-      const mergedFindings = this._mergeFindingsForPreview(allFindings)
-      
-      // Get database values for preview (wait for it to complete)
-      try {
-        const previewFindings = await this._getDatabaseValuesForPreview(mergedFindings)
-        this.parsedVulnerabilities = previewFindings
-        
-        // Sort by CVSS score in descending order
-        this.parsedVulnerabilities.sort((a, b) => {
-          const aScore = a.cvssScore || 0
-          const bScore = b.cvssScore || 0
-          return bScore - aScore
-        })
-        
-        // Clear selections since data changed
-        this.selectedVulnerabilities = []
-        
-        console.log(`Regrouped and sorted ${this.parsedVulnerabilities.length} vulnerabilities`)
-      } catch (error) {
-        console.error('Error regrouping vulnerabilities:', error)
-      }
-    },
 
     removeFile(fileIndex) {
       const removedFile = this.nessusFiles[fileIndex]
@@ -497,92 +457,30 @@ export default defineComponent({
       }
     },
 
-    /**
-     * Merge findings for preview (same logic as base parser)
-     */
-    _mergeFindingsForPreview(findings) {
-      console.log(`Merging ${findings.length} findings for preview`)
-      
-      // Group findings by title
-      const uniqueTitles = {}
-      for (const finding of findings) {
-        const title = finding.title
-        if (!uniqueTitles[title]) {
-          uniqueTitles[title] = []
-        }
-        uniqueTitles[title].push(finding)
-      }
-
-      // Process each group of findings
-      const result = []
-      for (const [title, titleFindings] of Object.entries(uniqueTitles)) {
-        const mergedFinding = this._mergeSingleFindingGroup(titleFindings)
-        result.push(mergedFinding)
-      }
-
-      console.log(`Preview shows ${result.length} unique vulnerabilities`)
-      return result
-    },
-
-    /**
-     * Merge a group of findings with the same title
-     */
-    _mergeSingleFindingGroup(findings) {
-      // Just combine scopes and pass all findings to the parser
-      const initialFinding = { ...findings[0] }
-      const mergedFinding = initialFinding
-      
-      // Collect all scopes/hosts from all findings
-      const allScopes = []
-      for (const finding of findings) {
-        if (finding.scope) {
-          allScopes.push(finding.scope)
-        }
-      }
-
-      // Set scope - combine all unique scopes/hosts
-      const uniqueScopes = [...new Set(allScopes)]
-      if (uniqueScopes.length > 0) {
-        mergedFinding.scope = uniqueScopes.join(', ')
-      }
-
-      // Store all original findings for the parser to handle
-      mergedFinding.allOriginalFindings = findings
-      
-      return mergedFinding
-    },
 
     /**
      * Get database values for preview
      */
     async _getDatabaseValuesForPreview(findings) {
       try {
-        console.log('Starting database lookup for preview...')
         
         // Get all vulnerabilities from database
         const VulnerabilityService = (await import('@/services/vulnerability')).default
         const response = await VulnerabilityService.getVulnerabilities()
         const allPwndocDBVulns = response.data.datas || []
-        
-        console.log('Database vulnerabilities found:', allPwndocDBVulns.length)
-        
+                
         const previewFindings = []
         
         for (const finding of findings) {
-          console.log('Looking for finding:', finding.title)
           const vulnFromDB = this._getVulnFromPwndocDBByTitle(finding.title, allPwndocDBVulns)
           
           if (vulnFromDB) {
-            console.log('FOUND IN DB:', vulnFromDB)
-            console.log('DB CVSS Vector:', vulnFromDB.cvssv3)
             
             // Convert CVSS vector to numerical score using appropriate calculator
             const cvssScore = this._convertCvssVectorToScore(vulnFromDB.cvssv3)
-            console.log('Converted CVSS Score:', cvssScore)
             
             // Convert CVSS score to severity using appropriate calculator
             const severity = this._cvssScoreToSeverity(cvssScore)
-            console.log('Converted Severity:', severity)
             
             // Use database values for CVSS and severity
             const previewFinding = {
@@ -595,7 +493,6 @@ export default defineComponent({
             }
             previewFindings.push(previewFinding)
           } else {
-            console.log('NOT FOUND IN DB:', finding.title)
             // If not in database, use parsed values (fallback)
             previewFindings.push({
               ...finding,  // This keeps our merged POC and scope
@@ -604,18 +501,14 @@ export default defineComponent({
             })
           }
         }
-        
-        console.log('Final preview findings (first 3):', previewFindings.slice(0, 3))
-        
+                
         // Sort by CVSS score in descending order (highest first)
         previewFindings.sort((a, b) => {
           const aScore = a.cvssScore || 0
           const bScore = b.cvssScore || 0
           return bScore - aScore // descending order
         })
-        
-        console.log('After sorting (first 3):', previewFindings.slice(0, 3))
-        
+                
         return previewFindings
       } catch (error) {
         console.error('Error getting database values for preview:', error)
@@ -632,14 +525,9 @@ export default defineComponent({
      * Get vulnerability from database by title
      */
     _getVulnFromPwndocDBByTitle(title, allVulns) {
-      console.log('Searching for title:', title)
-      console.log('Available titles in DB (first 5):', allVulns.map(v => v.details?.[0]?.title).slice(0, 5))
-      
       const found = allVulns.find(vuln => 
         vuln.details.some(detail => detail.title === title)
-      )
-      
-      console.log('Found vuln:', found)
+      )     
       return found
     },
 
@@ -696,7 +584,6 @@ export default defineComponent({
       const auditName = selectedAuditOption ? selectedAuditOption.label : 'Unknown Audit'
 
       try {
-        console.log('Showing confirmation dialog...')
         
         // Use the correct Quasar dialog API with Promise
         const confirmed = await new Promise((resolve) => {
@@ -713,26 +600,19 @@ export default defineComponent({
             },
             persistent: true
           }).onOk(() => {
-            console.log('User clicked OK')
             resolve(true)
           }).onCancel(() => {
-            console.log('User clicked Cancel')
             resolve(false)
           }).onDismiss(() => {
-            console.log('Dialog dismissed')
             resolve(false)
           })
         })
 
-        console.log('Dialog result:', confirmed)
-
         // Check if user confirmed
         if (!confirmed) {
-          console.log('Import cancelled by user')
           return
         }
 
-        console.log('Proceeding with import...')
         this.importing = true
 
         // Extract all original findings for the parser to handle merging
@@ -744,9 +624,7 @@ export default defineComponent({
             allOriginalFindings.push(v.originalFinding)
           }
         }
-        
-        console.log('Importing all original findings:', allOriginalFindings.length)
-        
+                
         // Create a parser with merge = true to handle POC creation properly
         const parser = new NessusParser(this.selectedAudit, [], true, false)
         
@@ -779,7 +657,6 @@ export default defineComponent({
      */
     _convertCvssVectorToScore(cvssVector) {
       if (!cvssVector || typeof cvssVector !== 'string') {
-        console.log('No CVSS vector provided:', cvssVector)
         return null
       }
       
@@ -787,33 +664,27 @@ export default defineComponent({
         // Check if it's already a numerical value
         const num = parseFloat(cvssVector)
         if (!isNaN(num)) {
-          console.log('CVSS is already numerical:', num)
           return num
         }
         
         // If it's a CVSS vector, use the appropriate calculator
         if (cvssVector.startsWith('CVSS:3.0/')) {
-          console.log('Converting CVSS 3.0 Vector:', cvssVector)
           
           // Use CVSS30.calculateCVSSFromVector for CVSS 3.0 (if available globally)
           // Note: CVSS30 might not be available globally, so we'll use CVSS31 as fallback
           const result = CVSS31.calculateCVSSFromVector(cvssVector)
           
           if (result.success) {
-            console.log('CVSS 3.0 calculation result:', result)
             return parseFloat(result.baseMetricScore)
           } else {
             console.error('CVSS 3.0 calculation failed:', result)
             return null
           }
-        } else if (cvssVector.startsWith('CVSS:3.1/')) {
-          console.log('Converting CVSS 3.1 Vector:', cvssVector)
-          
+        } else if (cvssVector.startsWith('CVSS:3.1/')) {         
           // Use CVSS31.calculateCVSSFromVector for CVSS 3.1
           const result = CVSS31.calculateCVSSFromVector(cvssVector)
           
           if (result.success) {
-            console.log('CVSS 3.1 calculation result:', result)
             return parseFloat(result.baseMetricScore)
           } else {
             console.error('CVSS 3.1 calculation failed:', result)
@@ -821,7 +692,6 @@ export default defineComponent({
           }
         }
         
-        console.log('CVSS vector format not recognized:', cvssVector)
         return null
       } catch (error) {
         console.error('Error converting CVSS vector:', error)
@@ -834,14 +704,12 @@ export default defineComponent({
      */
     _cvssScoreToSeverity(cvssScore) {
       if (cvssScore === null || cvssScore === undefined || isNaN(cvssScore)) {
-        console.log('Invalid CVSS score for severity conversion:', cvssScore)
         return 'Low'
       }
       
       // Both CVSS 3.0 and 3.1 have the same severity rating function
       // We can use either one since they have the same severity bands
       const severity = CVSS31.severityRating(cvssScore) || 'Low'
-      console.log(`CVSS score ${cvssScore} converted to severity: ${severity}`)
       return severity
     }
   }
