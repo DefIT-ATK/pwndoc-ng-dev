@@ -423,9 +423,6 @@ export class PingCastleParser extends BaseParser {
           vulnType: 'Vulnerability',
           description: vuln.rationale || '',
           observation: this._formatObservation(vuln),
-          remediation: this._getRemediation(vuln.riskId),
-          priority: this._getPriority(vuln.riskId),
-          cvssv3: this._getCVSSVector(vuln.riskId),
           category: 'Active Directory',
           poc: this._formatPOC(vuln),
           scope: vuln.domainName || 'Unknown Domain',
@@ -449,9 +446,6 @@ export class PingCastleParser extends BaseParser {
         vulnType: 'Vulnerability',
         description: vuln.rationale || '',
         observation: this._formatObservation(vuln),
-        remediation: this._getRemediation(vuln.riskId),
-        priority: this._getPriority(vuln.riskId),
-        cvssv3: this._getCVSSVector(vuln.riskId),
         category: 'Active Directory',
         poc: this._formatPOC(vuln),
         scope: vuln.domainName || 'Unknown Domain',
@@ -461,19 +455,16 @@ export class PingCastleParser extends BaseParser {
     
     // Multiple vulnerabilities, merge them
     const firstVuln = vulnGroup[0]
-    const mergedFinding = {
-      title: firstVuln.title,
-      vulnType: 'Vulnerability',
-      description: firstVuln.rationale || '',
-      observation: this._formatObservation(firstVuln),
-      remediation: this._getRemediation(firstVuln.riskId),
-      priority: this._getPriority(firstVuln.riskId),
-      cvssv3: this._getCVSSVector(firstVuln.riskId),
-      category: 'Active Directory',
-      poc: '',
-      scope: '',
-      originalFinding: vulnGroup
-    }
+          const mergedFinding = {
+        title: firstVuln.title,
+        vulnType: 'Vulnerability',
+        description: firstVuln.rationale || '',
+        observation: this._formatObservation(firstVuln),
+        category: 'Active Directory',
+        poc: '',
+        scope: '',
+        originalFinding: vulnGroup
+      }
     
     // Merge scopes
     const scopes = vulnGroup.map(v => v.domainName || 'Unknown Domain')
@@ -522,75 +513,6 @@ export class PingCastleParser extends BaseParser {
     }
     
     return poc
-  }
-
-  /**
-   * Get remediation text for risk type
-   */
-  _getRemediation(riskId) {
-    const remediations = {
-      'P-Delegated': 'Review and remove unconstrained delegation from service accounts that do not require it.',
-      'A-Krbtgt': 'Change the KRBTGT account password twice with a 10-hour interval between changes.',
-      'T-AzureADSSO': 'Rotate the Azure AD SSO password according to your organization\'s password policy.',
-      'P-ServiceDomainAdmin': 'Remove service accounts from Domain Admins group and use least privilege principles.',
-      'S-PwdNeverExpires': 'Configure password expiration policies and ensure all accounts have password expiration enabled.',
-      'S-PwdNotRequired': 'Enable password requirements for all user accounts.',
-      'P-SchemaAdmin': 'Review and remove unnecessary members from Schema Administrators group.',
-      'S-PrimaryGroup': 'Change the primary group of affected users to an appropriate group.',
-      'A-AdminSDHolder': 'Ensure AdminSDHolder protection is properly configured.',
-      'A-BackupMetadata': 'Perform regular Active Directory backups and verify backup integrity.',
-      'S-DC-2003': 'Upgrade or decommission Windows 2003 domain controllers.',
-      'A-DCLdapsChannelBinding': 'Enable LDAPS channel binding on all domain controllers.',
-      'S-DesEnabled': 'Disable DES encryption and use stronger encryption algorithms.'
-    }
-    
-    return remediations[riskId] || 'Review and remediate according to security best practices.'
-  }
-
-  /**
-   * Get priority for risk type
-   */
-  _getPriority(riskId) {
-    const priorities = {
-      'P-Delegated': 2, // High
-      'A-Krbtgt': 1, // Critical
-      'T-AzureADSSO': 2, // High
-      'P-ServiceDomainAdmin': 2, // High
-      'S-PwdNeverExpires': 3, // Medium
-      'S-PwdNotRequired': 2, // High
-      'P-SchemaAdmin': 2, // High
-      'S-PrimaryGroup': 3, // Medium
-      'A-AdminSDHolder': 2, // High
-      'A-BackupMetadata': 3, // Medium
-      'S-DC-2003': 1, // Critical
-      'A-DCLdapsChannelBinding': 3, // Medium
-      'S-DesEnabled': 2 // High
-    }
-    
-    return priorities[riskId] || 3
-  }
-
-  /**
-   * Get CVSS vector for risk type
-   */
-  _getCVSSVector(riskId) {
-    const cvssVectors = {
-      'P-Delegated': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
-      'A-Krbtgt': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
-      'T-AzureADSSO': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
-      'P-ServiceDomainAdmin': 'CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H',
-      'S-PwdNeverExpires': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N',
-      'S-PwdNotRequired': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
-      'P-SchemaAdmin': 'CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H',
-      'S-PrimaryGroup': 'CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:N',
-      'A-AdminSDHolder': 'CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H',
-      'A-BackupMetadata': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
-      'S-DC-2003': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
-      'A-DCLdapsChannelBinding': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N',
-      'S-DesEnabled': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N'
-    }
-    
-    return cvssVectors[riskId] || 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N'
   }
 
   /**

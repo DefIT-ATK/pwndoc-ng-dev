@@ -149,11 +149,7 @@ export class BaseParser {
           toAdd.poc = finding.poc
           toAdd.scope = finding.scope
           toAdd.vulnType = finding.vulnType
-          
-          // Keep the database values for CVSS and priority
-          // toAdd.cvssv3 = finding.cvssv3  // REMOVED - use database value
-          // toAdd.priority = finding.priority  // REMOVED - use database value
-          
+                    
           vulnsToAdd.push(toAdd)
         }
       }
