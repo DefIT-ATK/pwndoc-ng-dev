@@ -507,5 +507,68 @@ export default {
     twoStepVerification: '两步验证2-Step Verification',
     twoStepVerificationMessage: '打开您的身份验证应用程序并输入它提供的安全码。',
     captions: '标题',
-    captionsDescription: '添加将在报告中使用的标题标签（默认为 \'Figure\'）'
+    captionsDescription: '添加将在报告中使用的标题标签（默认为 \'Figure\'）',
+    toolIntegration: {
+        title: '工具集成',
+        subtitle: '从各种安全工具导入漏洞',
+        tools: {
+            nessus: 'Nessus',
+            pingcastle: 'PingCastle',
+            custom: '自定义工具'
+        },
+        nessus: {
+            title: 'Nessus漏洞扫描器',
+            description: '从Nessus扫描结果导入漏洞（.nessus、.xml或.csv格式）',
+            selectFile: '选择Nessus输出文件（.nessus、.xml、.csv）',
+            dragDropTitle: '在此处拖放Nessus文件',
+            dragDropSubtitle: '或点击浏览文件',
+            supportedFormats: '支持的格式：.nessus、.xml、.csv',
+            import: '导入选定的漏洞',
+            parseSuccess: '成功解析{unique}个唯一漏洞（共{total}个发现）',
+            parseError: '解析Nessus文件时出错',
+            importSuccess: '成功将{count}个漏洞导入到{audit}',
+            importError: '导入漏洞时出错',
+            noVulnerabilities: '未选择要导入的漏洞'
+        },
+        pingcastle: {
+            title: 'PingCastle AD健康检查',
+            description: '从PingCastle Active Directory健康检查报告导入漏洞（.xml格式）',
+            selectFile: '选择PingCastle输出文件',
+            dragDropTitle: '在此处拖放PingCastle文件',
+            dragDropSubtitle: '或点击浏览文件',
+            supportedFormats: '支持的格式：.xml',
+            import: '导入选定的漏洞',
+            parseSuccess: '成功解析{unique}个唯一漏洞（共{total}个发现）',
+            parseError: '解析PingCastle文件时出错',
+            importSuccess: '成功将{count}个漏洞导入到{audit}',
+            importError: '导入漏洞时出错',
+            noVulnerabilities: '未选择要导入的漏洞',
+            noFileSelected: '未选择PingCastle文件'
+        },
+        custom: {
+            title: '自定义工具',
+            description: '从自定义安全工具或脚本导入',
+            selectFile: '选择自定义输出文件',
+            import: '导入数据'
+        },
+        auditSelection: {
+            title: '选择目标审计',
+            selectAudit: '选择要添加发现的审计',
+            noAudits: '没有可用的审计',
+            noAuditSelected: '请选择审计以导入漏洞'
+        },
+        preview: {
+            title: '导入预览',
+            description: '预览{unique}个唯一漏洞（共{total}个发现）',
+            mergeInfo: '重复的漏洞已自动合并',
+            selectAll: '全选',
+            deselectAll: '取消全选',
+            columns: {
+                title: '标题',
+                severity: '严重性',
+                cvss: 'CVSS',
+                category: '类别'
+            }
+        }
+    }
   }

@@ -435,5 +435,68 @@ export default {
     remediationColorsComplexity: 'Couleurs des complexitées de Remediation',
     remediationColorsPriority: 'Couleurs des prioritées de Remediation',
     changeRemediationColorsDescriptionComplexity: 'Modifier les couleurs utilisées dans le rapport pour représenter les différentes complexitées des remediations',
-    changeRemediationColorsDescriptionPriority: 'Modifier les couleurs utilisées dans le rapport pour représenter les différentes priorités des remediations'
+    changeRemediationColorsDescriptionPriority: 'Modifier les couleurs utilisées dans le rapport pour représenter les différentes priorités des remediations',
+    toolIntegration: {
+        title: 'Intégration d\'Outils',
+        subtitle: 'Importer des vulnérabilités depuis divers outils de sécurité',
+        tools: {
+            nessus: 'Nessus',
+            pingcastle: 'PingCastle',
+            custom: 'Outil Personnalisé'
+        },
+        nessus: {
+            title: 'Scanner de Vulnérabilités Nessus',
+            description: 'Importer des vulnérabilités depuis les résultats de scan Nessus (.nessus, .xml, ou .csv)',
+            selectFile: 'Sélectionner un fichier de sortie Nessus (.nessus, .xml, .csv)',
+            dragDropTitle: 'Déposez les fichiers Nessus ici',
+            dragDropSubtitle: 'ou cliquez pour parcourir les fichiers',
+            supportedFormats: 'Formats supportés: .nessus, .xml, .csv',
+            import: 'Importer les Vulnérabilités Sélectionnées',
+            parseSuccess: 'Analyse réussie de {unique} vulnérabilités uniques sur {total} découvertes totales',
+            parseError: 'Erreur lors de l\'analyse du fichier Nessus',
+            importSuccess: 'Import réussi de {count} vulnérabilités vers {audit}',
+            importError: 'Erreur lors de l\'import des vulnérabilités',
+            noVulnerabilities: 'Aucune vulnérabilité sélectionnée pour l\'import'
+        },
+        pingcastle: {
+            title: 'Vérification de Santé AD PingCastle',
+            description: 'Importer des vulnérabilités depuis les rapports de vérification de santé Active Directory PingCastle (.xml)',
+            selectFile: 'Sélectionner un fichier de sortie PingCastle',
+            dragDropTitle: 'Déposez les fichiers PingCastle ici',
+            dragDropSubtitle: 'ou cliquez pour parcourir les fichiers',
+            supportedFormats: 'Formats supportés: .xml',
+            import: 'Importer les Vulnérabilités Sélectionnées',
+            parseSuccess: 'Analyse réussie de {unique} vulnérabilités uniques sur {total} découvertes totales',
+            parseError: 'Erreur lors de l\'analyse du fichier PingCastle',
+            importSuccess: 'Import réussi de {count} vulnérabilités vers {audit}',
+            importError: 'Erreur lors de l\'import des vulnérabilités',
+            noVulnerabilities: 'Aucune vulnérabilité sélectionnée pour l\'import',
+            noFileSelected: 'Aucun fichier PingCastle sélectionné'
+        },
+        custom: {
+            title: 'Outil Personnalisé',
+            description: 'Importer depuis des outils de sécurité personnalisés ou des scripts',
+            selectFile: 'Sélectionner un fichier de sortie personnalisé',
+            import: 'Importer les Données'
+        },
+        auditSelection: {
+            title: 'Sélectionner l\'Audit Cible',
+            selectAudit: 'Choisir un audit pour ajouter des découvertes',
+            noAudits: 'Aucun audit disponible',
+            noAuditSelected: 'Veuillez sélectionner un audit pour importer les vulnérabilités'
+        },
+        preview: {
+            title: 'Aperçu de l\'Import',
+            description: 'Aperçu de {unique} vulnérabilités uniques (sur {total} découvertes totales)',
+            mergeInfo: 'Les vulnérabilités en double ont été fusionnées automatiquement',
+            selectAll: 'Tout Sélectionner',
+            deselectAll: 'Tout Désélectionner',
+            columns: {
+                title: 'Titre',
+                severity: 'Sévérité',
+                cvss: 'CVSS',
+                category: 'Catégorie'
+            }
+        }
+    }
   }

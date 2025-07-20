@@ -547,4 +547,67 @@ export default {
     changeRemediationColorsDescriptionComplexity: 'Ändern Sie die im Bericht verwendeten Farben, um die unterschiedlichen Komplexitäten der Sanierung darzustellen',
     changeRemediationColorsDescriptionPriority: 'Ändern Sie die im Bericht verwendeten Farben, um unterschiedliche Behebungsprioritäten darzustellen',
     remediationColorsPriority: 'Farben für die Priorität der Behebung',
+    toolIntegration: {
+        title: 'Tool-Integration',
+        subtitle: 'Schwachstellen aus verschiedenen Sicherheitstools importieren',
+        tools: {
+            nessus: 'Nessus',
+            pingcastle: 'PingCastle',
+            custom: 'Benutzerdefiniertes Tool'
+        },
+        nessus: {
+            title: 'Nessus-Schwachstellenscanner',
+            description: 'Schwachstellen aus Nessus-Scan-Ergebnissen importieren (.nessus, .xml oder .csv-Format)',
+            selectFile: 'Nessus-Ausgabedatei auswählen (.nessus, .xml, .csv)',
+            dragDropTitle: 'Nessus-Dateien hier ablegen',
+            dragDropSubtitle: 'oder klicken, um Dateien zu durchsuchen',
+            supportedFormats: 'Unterstützte Formate: .nessus, .xml, .csv',
+            import: 'Ausgewählte Schwachstellen importieren',
+            parseSuccess: 'Erfolgreich {unique} eindeutige Schwachstellen aus {total} Gesamtbefunden analysiert',
+            parseError: 'Fehler beim Analysieren der Nessus-Datei',
+            importSuccess: 'Erfolgreich {count} Schwachstellen zu {audit} importiert',
+            importError: 'Fehler beim Importieren der Schwachstellen',
+            noVulnerabilities: 'Keine Schwachstellen für Import ausgewählt'
+        },
+        pingcastle: {
+            title: 'PingCastle AD-Gesundheitsprüfung',
+            description: 'Schwachstellen aus PingCastle Active Directory-Gesundheitsprüfungsberichten importieren (.xml-Format)',
+            selectFile: 'PingCastle-Ausgabedatei auswählen',
+            dragDropTitle: 'PingCastle-Dateien hier ablegen',
+            dragDropSubtitle: 'oder klicken, um Dateien zu durchsuchen',
+            supportedFormats: 'Unterstützte Formate: .xml',
+            import: 'Ausgewählte Schwachstellen importieren',
+            parseSuccess: 'Erfolgreich {unique} eindeutige Schwachstellen aus {total} Gesamtbefunden analysiert',
+            parseError: 'Fehler beim Analysieren der PingCastle-Datei',
+            importSuccess: 'Erfolgreich {count} Schwachstellen zu {audit} importiert',
+            importError: 'Fehler beim Importieren der Schwachstellen',
+            noVulnerabilities: 'Keine Schwachstellen für Import ausgewählt',
+            noFileSelected: 'Keine PingCastle-Datei ausgewählt'
+        },
+        custom: {
+            title: 'Benutzerdefiniertes Tool',
+            description: 'Aus benutzerdefinierten Sicherheitstools oder Skripten importieren',
+            selectFile: 'Benutzerdefinierte Ausgabedatei auswählen',
+            import: 'Daten importieren'
+        },
+        auditSelection: {
+            title: 'Ziel-Audit auswählen',
+            selectAudit: 'Audit auswählen, um Befunde hinzuzufügen',
+            noAudits: 'Keine Audits verfügbar',
+            noAuditSelected: 'Bitte wählen Sie ein Audit aus, um Schwachstellen zu importieren'
+        },
+        preview: {
+            title: 'Import-Vorschau',
+            description: 'Vorschau von {unique} eindeutigen Schwachstellen (aus {total} Gesamtbefunden)',
+            mergeInfo: 'Doppelte Schwachstellen wurden automatisch zusammengeführt',
+            selectAll: 'Alle auswählen',
+            deselectAll: 'Alle abwählen',
+            columns: {
+                title: 'Titel',
+                severity: 'Schweregrad',
+                cvss: 'CVSS',
+                category: 'Kategorie'
+            }
+        }
+    }
 }

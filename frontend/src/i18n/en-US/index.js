@@ -553,7 +553,7 @@ export default {
         subtitle: 'Import vulnerabilities from various security tools',
         tools: {
             nessus: 'Nessus',
-            burp: 'Burp Suite',
+            pingcastle: 'PingCastle',
             custom: 'Custom Tool'
         },
         nessus: {
@@ -570,11 +570,20 @@ export default {
             importError: 'Error importing vulnerabilities',
             noVulnerabilities: 'No vulnerabilities selected for import'
         },
-        burp: {
-            title: 'Burp Suite Professional',
-            description: 'Import issues from Burp Suite Professional (XML or JSON format)',
-            selectFile: 'Select Burp Suite output file',
-            import: 'Import Issues'
+        pingcastle: {
+            title: 'PingCastle AD Health Check',
+            description: 'Import vulnerabilities from PingCastle Active Directory health check reports (.xml format)',
+            selectFile: 'Select PingCastle output file',
+            dragDropTitle: 'Drop PingCastle files here',
+            dragDropSubtitle: 'or click to browse files',
+            supportedFormats: 'Supported formats: .xml',
+            import: 'Import Selected Vulnerabilities',
+            parseSuccess: 'Successfully parsed {unique} unique vulnerabilities from {total} total findings',
+            parseError: 'Error parsing PingCastle file',
+            importSuccess: 'Successfully imported {count} vulnerabilities to {audit}',
+            importError: 'Error importing vulnerabilities',
+            noVulnerabilities: 'No vulnerabilities selected for import',
+            noFileSelected: 'No PingCastle file selected'
         },
         custom: {
             title: 'Custom Tool',
