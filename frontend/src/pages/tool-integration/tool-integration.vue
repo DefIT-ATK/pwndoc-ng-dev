@@ -451,7 +451,13 @@ export default defineComponent({
   },
 
   async mounted() {
-    await this.loadAudits()
+    // Always reload settings from backend when entering this page
+    if (this.$settings && this.$settings.refresh) {
+      console.log('Refreshing settings')
+      console.log(this.$settings)
+      await this.$settings.refresh();
+    }
+    await this.loadAudits();
   },
 
   methods: {
@@ -936,9 +942,19 @@ export default defineComponent({
         this.pingCastleFileFindingsMap = {}
         this.totalPingCastleVulnerabilities = 0
         
+        // Get the map from global settings
+        const pingcastleMap = this.$settings.toolIntegrations?.pingcastle?.pingcastleMap;
+        console.log('PingCastle map used by parser:', pingcastleMap);
+
         // Parse all files together with one parser to handle merging properly
         // Use merge = true and dryRun = true for preview
-        const parser = new PingCastleParser(null, this.pingCastleFiles, true, true)
+        const parser = new PingCastleParser(
+          null, // or auditId if needed
+          this.pingCastleFiles,
+          true, // merge
+          true, // dryRun
+          pingcastleMap // <--- pass the map here
+        )
         await parser.parse()
         
         // Store findings by file for tracking (simplified approach)
@@ -1117,7 +1133,8 @@ export default defineComponent({
         }
                 
         // Create a parser with merge = true to handle POC creation properly
-        const parser = new PingCastleParser(this.selectedAudit, [], true, false)
+        const pingcastleMap = this.$settings.toolIntegrations?.pingcastle?.pingcastleMap;
+        const parser = new PingCastleParser(this.selectedAudit, [], true, false, pingcastleMap);
         
         // Import all original findings and let the parser handle merging
         await parser.importSelectedFindings(allOriginalFindings)

@@ -356,6 +356,28 @@
             </q-card-section>
         </q-card>
 
+        <q-card class="q-my-md">
+            <q-card-section class="q-py-none bg-blue-grey-5 text-white">
+              <q-item style="padding:0px;">
+                <q-item-section class="col-md-11">
+                  <div class="text-h6">Tool Integrations</div>
+                </q-item-section>
+              </q-item>
+            </q-card-section>
+            <q-card-section>
+              <div class="text-bold">PingCastle Map</div>
+              <div class="text-grey-8 q-mb-sm">
+                Edit the mapping between PingCastle risk IDs and vulnerability titles.
+              </div>
+              <q-btn
+                color="primary"
+                label="Edit PingCastle Map"
+                @click="openPingcastleDialog"
+                class="q-mb-md"
+              />
+            </q-card-section>
+          </q-card>
+
         <q-card class="q-my-lg" v-if="canEdit" align="center">
             <q-card-section >
                 <q-item>
@@ -422,5 +444,82 @@
                 </q-item>
             </q-card-section>
         </q-card>
+
     </div>
-</div>        
+</div>
+
+<q-dialog v-model="pingcastleDialog" persistent>
+  <q-card style="min-width: 700px; max-width: 90vw;">
+    <q-card-section>
+      <div class="text-h6">Edit PingCastle Map</div>
+    </q-card-section>
+    <q-tabs v-model="pingcastleTab" dense>
+      <q-tab name="table" label="Table" />
+      <q-tab name="json" label="JSON" />
+    </q-tabs>
+    <q-separator />
+    <q-tab-panels v-model="pingcastleTab" animated>
+      <q-tab-panel name="table">
+        <div style="max-height: 60vh; overflow-y: auto;">
+          <q-table
+            :rows="pingcastleMapArray"
+            :columns="[
+              { name: 'key', label: 'Risk ID', field: 'key', align: 'left', required: true, sortable: true },
+              { name: 'value', label: 'Vulnerability Title', field: 'value', align: 'left', required: true, sortable: true },
+              { name: 'actions', label: '', field: 'actions', align: 'right' }
+            ]"
+            row-key="key"
+            flat
+            hide-bottom
+            class="q-mb-md"
+            dense
+            virtual-scroll
+            :rows-per-page-options="[0]"
+          >
+            <template v-slot:body-cell-key="props">
+              <q-td>
+                <q-input v-model="props.row.key" dense />
+              </q-td>
+            </template>
+            <template v-slot:body-cell-value="props">
+              <q-td>
+                <q-input v-model="props.row.value" dense />
+              </q-td>
+            </template>
+            <template v-slot:body-cell-actions="props">
+              <q-td>
+                <q-btn icon="delete" color="negative" dense flat @click="removePingcastleMapRow(props.rowIndex)" />
+              </q-td>
+            </template>
+          </q-table>
+          <q-btn
+            color="primary"
+            icon="add"
+            label="Add Mapping"
+            @click="addPingcastleMapRow"
+            flat
+            dense
+            class="q-mt-sm"
+          />
+        </div>
+      </q-tab-panel>
+      <q-tab-panel name="json">
+        <q-input
+          v-model="pingcastleMapJson"
+          type="textarea"
+          autogrow
+          label="PingCastle Map (JSON)"
+          :error="pingcastleMapJsonError"
+          :error-message="pingcastleMapJsonErrorMsg"
+          @input="onPingcastleJsonInput"
+          style="min-height: 300px"
+        />
+      </q-tab-panel>
+    </q-tab-panels>
+    <q-separator />
+    <q-card-actions align="right">
+      <q-btn flat label="Cancel" color="primary" v-close-popup />
+      <q-btn flat label="Save" color="primary" @click="savePingcastleDialog" :disable="pingcastleMapJsonError" />
+    </q-card-actions>
+  </q-card>
+</q-dialog>

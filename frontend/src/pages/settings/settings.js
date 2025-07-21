@@ -7,15 +7,21 @@ import { $t } from 'boot/i18n'
 import LanguageSelector from '@/components/language-selector';
 
 export default {
-    data: () => {
-        return {
-            loading: true,
-            UserService: UserService,
-            settings: {danger:{enabled:false,public:{nbdaydelete: 0}},reviews:{enabled:false}},
-            settingsOrig : {danger:{enabled:false},reviews:{enabled:false}},
-            canEdit: false
-        }
-    },
+    data: () => ({
+        loading: true,
+        UserService: UserService,
+        settings: {danger:{enabled:false,public:{nbdaydelete: 0}},reviews:{enabled:false}},
+        settingsOrig : {danger:{enabled:false},reviews:{enabled:false}},
+        canEdit: false,
+        
+        // PingCastle dialog state and data
+        pingcastleDialog: false,
+        pingcastleTab: 'table',
+        pingcastleMapArray: [],
+        pingcastleMapJson: '',
+        pingcastleMapJsonError: false,
+        pingcastleMapJsonErrorMsg: '',
+    }),
     components: {
         LanguageSelector
     },
@@ -60,15 +66,17 @@ export default {
         getSettings: function() {
             SettingsService.getSettings()
             .then((data) => {
-                this.settings = this.$_.merge(
-                    {
-                      danger: { enabled: false, public:{nbdaydelete: 0}},
-                      reviews: { enabled: false, public: { minReviewers: 1 } }
-                    },
-                    data.data.datas
-                  );
+                this.settings = data.data.datas || {};
+                if (!this.settings.danger) this.settings.danger = { enabled: false, public: { nbdaydelete: 0 } };
+                if (!this.settings.reviews) this.settings.reviews = { enabled: false, public: { minReviewers: 1 } };
                   
                 this.settingsOrig = this.$_.cloneDeep(this.settings);
+                // Populate the array for the table UI
+                const mapObj = this.settings.toolIntegrations?.pingcastle?.pingcastleMap || {};
+                this.pingcastleMapArray = Object.entries(mapObj).map(([key, value]) => ({
+                  key,
+                  value
+                }));
                 this.loading = false
             })
             .catch((err) => {
@@ -81,16 +89,80 @@ export default {
             })
         },
 
+        addPingcastleMapRow() {
+            this.pingcastleMapArray.push({ key: '', value: '' });
+        },
+        removePingcastleMapRow(index) {
+            this.pingcastleMapArray.splice(index, 1);
+        },
+        syncPingcastleMapToSettings() {
+            let mapObj;
+            if (this.pingcastleTab === 'json') {
+                try {
+                    mapObj = JSON.parse(this.pingcastleMapJson);
+                    this.pingcastleMapJsonError = false;
+                    this.pingcastleMapJsonErrorMsg = '';
+                } catch (e) {
+                    this.pingcastleMapJsonError = true;
+                    this.pingcastleMapJsonErrorMsg = 'Invalid JSON: ' + e.message;
+                    return false;
+                }
+            } else {
+                mapObj = {};
+                for (const row of this.pingcastleMapArray) {
+                    if (row.key) mapObj[row.key] = row.value;
+                }
+            }
+            this.settings.toolIntegrations = this.settings.toolIntegrations || {};
+            this.settings.toolIntegrations.pingcastle = this.settings.toolIntegrations.pingcastle || {};
+            this.settings.toolIntegrations.pingcastle.pingcastleMap = mapObj;
+            return true;
+        },
+        savePingcastleDialog() {
+            if (!this.syncPingcastleMapToSettings()) return;
+            this.pingcastleDialog = false;
+            // Optionally, update the array/json for next open
+            const mapObj = this.settings.toolIntegrations?.pingcastle?.pingcastleMap || {};
+            this.pingcastleMapArray = Object.entries(mapObj).map(([key, value]) => ({ key, value }));
+            this.pingcastleMapJson = JSON.stringify(mapObj, null, 2);
+        },
+        onPingcastleJsonInput() {
+            try {
+                JSON.parse(this.pingcastleMapJson);
+                this.pingcastleMapJsonError = false;
+                this.pingcastleMapJsonErrorMsg = '';
+            } catch (e) {
+                this.pingcastleMapJsonError = true;
+                this.pingcastleMapJsonErrorMsg = 'Invalid JSON: ' + e.message;
+            }
+        },
+        openPingcastleDialog() {
+            const mapObj = this.settings.toolIntegrations?.pingcastle?.pingcastleMap || {};
+            this.pingcastleMapArray = Object.entries(mapObj).map(([key, value]) => ({ key, value }));
+            this.pingcastleMapJson = JSON.stringify(mapObj, null, 2);
+            this.pingcastleMapJsonError = false;
+            this.pingcastleMapJsonErrorMsg = '';
+            this.pingcastleTab = 'table';
+            this.pingcastleDialog = true;
+        },
+
         updateSettings: function() {
             var min = 1;
             var max = 99;
             if(this.settings.reviews.public.minReviewers < min || this.settings.reviews.public.minReviewers > max) {
                 this.settings.reviews.public.minReviewers = this.settings.reviews.public.minReviewers < min ? min: max;
             }
+            this.syncPingcastleMapToSettings();
             SettingsService.updateSettings(this.settings)
             .then((data) => {
                 this.settingsOrig = this.$_.cloneDeep(this.settings);
                 this.$settings.refresh();
+                // Update the array after save
+                const mapObj = this.settings.toolIntegrations?.pingcastle?.pingcastleMap || {};
+                this.pingcastleMapArray = Object.entries(mapObj).map(([key, value]) => ({
+                  key,
+                  value
+                }));
                 Notify.create({
                     message: $t('msg.settingsUpdatedOk'),
                     color: 'positive',

@@ -4,13 +4,12 @@ import BaseParser from '../base-parser'
  * PingCastle parser for importing vulnerabilities from PingCastle AD Health Check reports
  */
 export class PingCastleParser extends BaseParser {
-  constructor(auditId, filenames, merge = true, dryRun = false) {
+  constructor(auditId, filenames, merge = true, dryRun = false, pingcastleMap = null) {
     super(auditId, filenames, merge, dryRun)
     this.domainName = null
     this.risks = {}
-    
-    // PingCastle risk mappings to PwnDoc vulnerability titles
-    this.pingcastleMap = {
+    // Use the provided map, or fall back to the default
+    this.pingcastleMap = pingcastleMap || {
       "A-Krbtgt" : "Kerberos password last change",
       "P-Delegated":"Administrator Accounts without the \"this account is sensitive and cannot be delegated\" flag",
       "P-Kerberoasting":"Admin users vulnerable to Kerberoast attack",
@@ -89,7 +88,8 @@ export class PingCastleParser extends BaseParser {
    */
   async _extractVulns(files) {
     const vulns = []
-    
+    const unmatchedRiskIds = new Set()
+
     for (const file of files) {
       try {
         const content = await this.readFileAsText(file)
@@ -114,9 +114,20 @@ export class PingCastleParser extends BaseParser {
               fileName: file.name
             }
             vulns.push(vuln)
+          } else {
+            unmatchedRiskIds.add(riskId)
           }
         }
-        
+
+        // Log unmatched risk IDs for this file
+        if (unmatchedRiskIds.size > 0) {
+          console.log(
+            `Unmatched PingCastle risk IDs in file ${file.name}:`,
+            Array.from(unmatchedRiskIds)
+          )
+        }
+        unmatchedRiskIds.clear()
+
       } catch (error) {
         console.error(`Error parsing PingCastle file ${file.name}:`, error)
         throw new Error(`Failed to parse PingCastle file ${file.name}: ${error.message}`)
