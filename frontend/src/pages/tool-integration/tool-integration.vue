@@ -617,6 +617,7 @@ export default defineComponent({
         this.selectedVulnerabilities = []
         this.totalVulnerabilities = 0
         this.fileFindingsMap = {}
+        this.nessusDebugInfo = []
       }
       
       console.log(`Removed file ${removedFile.name}, remaining files: ${this.nessusFiles.length}`)
@@ -1010,6 +1011,7 @@ export default defineComponent({
         this.selectedPingCastleVulnerabilities = []
         this.totalPingCastleVulnerabilities = 0
         this.pingCastleFileFindingsMap = {}
+        this.pingcastleDebugInfo = []
       }
       
       console.log(`Removed PingCastle file ${removedFile.name}, remaining files: ${this.pingCastleFiles.length}`)
