@@ -98,10 +98,13 @@ export class PingCastleParser extends BaseParser {
         // Parse domain name
         this.domainName = this._getElementText(xmlDoc, 'DomainFQDN')
         
-        // Parse risks
+        // CLEAR risks for each file - this fixes the bug!
+        this.risks = {}
+        
+        // Parse risks for this specific file
         this._parseRisks(xmlDoc)
         
-        // Convert risks to vulnerabilities
+        // Convert risks to vulnerabilities for this file only
         for (const [riskId, riskData] of Object.entries(this.risks)) {
           if (this.pingcastleMap[riskId]) {
             const vuln = {
@@ -402,18 +405,19 @@ export class PingCastleParser extends BaseParser {
     this.findings = []
     
     if (this._merge) {
-      // Group vulnerabilities by title for merging
+      // Group vulnerabilities by riskId only (like Nessus groups by title)
       const vulnGroups = {}
       
       for (const vuln of this.vulns) {
-        if (!vulnGroups[vuln.title]) {
-          vulnGroups[vuln.title] = []
+        // Group by riskId to merge same vulnerability across different domains
+        if (!vulnGroups[vuln.riskId]) {
+          vulnGroups[vuln.riskId] = []
         }
-        vulnGroups[vuln.title].push(vuln)
+        vulnGroups[vuln.riskId].push(vuln)
       }
       
       // Create merged findings
-      for (const [title, vulnGroup] of Object.entries(vulnGroups)) {
+      for (const [riskId, vulnGroup] of Object.entries(vulnGroups)) {
         const mergedFinding = this._mergeVulnerabilities(vulnGroup)
         this.findings.push(mergedFinding)
       }
@@ -437,7 +441,7 @@ export class PingCastleParser extends BaseParser {
   }
 
   /**
-   * Merge multiple vulnerabilities with the same title
+   * Merge multiple vulnerabilities with the same riskId
    */
   _mergeVulnerabilities(vulnGroup) {
     if (vulnGroup.length === 1) {
@@ -455,34 +459,32 @@ export class PingCastleParser extends BaseParser {
       }
     }
     
-    // Multiple vulnerabilities, merge them
+    // Multiple vulnerabilities with same riskId from different domains
     const firstVuln = vulnGroup[0]
-          const mergedFinding = {
-        title: firstVuln.title,
-        vulnType: 'Vulnerability',
-        description: firstVuln.rationale || '',
-        observation: this._formatObservation(firstVuln),
-        category: 'Active Directory',
-        poc: '',
-        scope: '',
-        originalFinding: vulnGroup
-      }
+    const mergedFinding = {
+      title: firstVuln.title,
+      vulnType: 'Vulnerability',
+      description: firstVuln.rationale || '',
+      observation: this._formatObservation(firstVuln),
+      category: 'Active Directory',
+      poc: '',
+      scope: '',
+      originalFinding: vulnGroup
+    }
     
-    // Merge scopes
+    // Merge scopes (domains)
     const scopes = vulnGroup.map(v => v.domainName || 'Unknown Domain')
     mergedFinding.scope = [...new Set(scopes)].join(', ')
     
-    // Merge POCs by concatenating them
+    // Merge POCs - each domain gets its own section
     const pocs = []
     for (const vuln of vulnGroup) {
       const poc = this._formatPOC(vuln)
       if (poc) {
         pocs.push(poc)
-        // add a new line between each poc
-        pocs.push('<br/>')
       }
     }
-    mergedFinding.poc = pocs.join('\n\n')
+    mergedFinding.poc = pocs.join('<br/><br/>')
     
     return mergedFinding
   }
@@ -565,4 +567,4 @@ export class PingCastleParser extends BaseParser {
   }
 }
 
-export default PingCastleParser 
+export default PingCastleParser
