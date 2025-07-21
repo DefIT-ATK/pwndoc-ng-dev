@@ -98,24 +98,45 @@
                                   {{ nessusDebugInfo[0] }}
                                 </q-chip>
                               </div>
+                              <div v-else-if="nessusDebugInfo[0]?.startsWith('File analysis:')" class="q-mb-sm">
+                                <div class="text-subtitle2 q-mb-sm text-blue-8">
+                                  <q-icon name="fa fa-file-alt" class="q-mr-xs" />
+                                  {{ nessusDebugInfo[0] }}
+                                </div>
+                                <div class="debug-list">
+                                  <div
+                                    v-for="(info, idx) in nessusDebugInfo.slice(1)"
+                                    :key="idx"
+                                    class="text-body2"
+                                    :class="{
+                                      'text-weight-medium q-mt-sm q-mb-xs': info.startsWith('📄'),
+                                      'text-grey-7 q-ml-md': !info.startsWith('📄'),
+                                      'text-orange-8 text-weight-medium q-mt-md q-mb-xs': info.startsWith('⚠️')
+                                    }"
+                                  >
+                                    {{ info }}
+                                  </div>
+                                </div>
+                              </div>
                               <div v-else>
                                 <div class="text-subtitle2 q-mb-sm text-orange-8">
                                   <q-icon name="fa fa-plus-circle" class="q-mr-xs" />
                                   {{ nessusDebugInfo[0] }}
                                 </div>
                                 <div class="debug-list">
-                                  <q-chip
+                                  <div
                                     v-for="(info, idx) in nessusDebugInfo.slice(1)"
                                     :key="idx"
-                                    color="orange"
-                                    text-color="white"
-                                    dense
-                                    class="q-ma-xs"
-                                    size="sm"
+                                    class="text-body2"
+                                    :class="{
+                                      'text-weight-medium q-mt-sm q-mb-xs': info.startsWith('📄'),
+                                      'text-grey-7 q-ml-md': !info.startsWith('📄'),
+                                      'text-orange-8 text-weight-medium q-mt-md q-mb-xs': info.startsWith('⚠️')
+                                      
+                                    }"
                                   >
-                                    <q-icon name="fa fa-file-medical" size="xs" class="q-mr-xs" />
                                     {{ info }}
-                                  </q-chip>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -300,24 +321,44 @@
                                   {{ pingcastleDebugInfo[0] }}
                                 </q-chip>
                               </div>
+                              <div v-else-if="pingcastleDebugInfo[0]?.startsWith('File analysis:')" class="q-mb-sm">
+                                <div class="text-subtitle2 q-mb-sm text-blue-8">
+                                  <q-icon name="fa fa-file-alt" class="q-mr-xs" />
+                                  {{ pingcastleDebugInfo[0] }}
+                                </div>
+                                <div class="debug-list">
+                                  <div
+                                    v-for="(info, idx) in pingcastleDebugInfo.slice(1)"
+                                    :key="idx"
+                                    class="text-body2"
+                                    :class="{
+                                      'text-weight-medium q-mt-sm q-mb-xs': info.startsWith('📄'),
+                                      'text-grey-7 q-ml-md': !info.startsWith('📄') && !info.startsWith('⚠️'),
+                                      'text-orange-8 text-weight-medium q-mt-md q-mb-xs': info.startsWith('⚠️')
+                                    }"
+                                  >
+                                    {{ info }}
+                                  </div>
+                                </div>
+                              </div>
                               <div v-else>
                                 <div class="text-subtitle2 q-mb-sm text-red-8">
                                   <q-icon name="fa fa-exclamation-triangle" class="q-mr-xs" />
                                   {{ pingcastleDebugInfo[0] }}
                                 </div>
                                 <div class="debug-list">
-                                  <q-chip
+                                  <div
                                     v-for="(info, idx) in pingcastleDebugInfo.slice(1)"
                                     :key="idx"
-                                    color="red"
-                                    text-color="white"
-                                    dense
-                                    class="q-ma-xs"
-                                    size="sm"
+                                    class="text-body2"
+                                    :class="{
+                                      'text-weight-medium q-mt-sm q-mb-xs': info.startsWith('📄'),
+                                      'text-grey-7 q-ml-md': !info.startsWith('📄') && !info.startsWith('⚠️'),
+                                      'text-orange-8 text-weight-medium q-mt-md q-mb-xs': info.startsWith('⚠️')
+                                    }"
                                   >
-                                    <q-icon name="fa fa-question-circle" size="xs" class="q-mr-xs" />
                                     {{ info }}
-                                  </q-chip>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -681,13 +722,47 @@ export default defineComponent({
         const response = await VulnerabilityService.getVulnerabilities();
         const allDBVulns = response.data.datas || [];
 
-        const newVulns = parser.findings.filter(finding =>
-          !allDBVulns.some(vuln => vuln.details.some(detail => detail.title === finding.title))
-        ).map(finding => finding.title);
+        // Group findings by filename (extract from POC or scope)
+        const debugInfo = []
+        const fileNewVulns = {}
 
-        this.nessusDebugInfo = newVulns.length
-          ? ['New vulnerabilities to be added:', ...newVulns]
-          : ['No new vulnerabilities detected.'];
+        // Initialize file tracking
+        for (const file of this.nessusFiles) {
+          fileNewVulns[file.name] = []
+        }
+
+        // Check each finding to see if it's new to database
+        for (const finding of parser.findings) {
+          const isNewVuln = !allDBVulns.some(vuln => 
+            vuln.details.some(detail => detail.title === finding.title)
+          )
+          
+          if (isNewVuln) {
+            // Add to all files (since we merged, we don't know which specific file)
+            // Or you can extract from POC if it contains host information
+            for (const file of this.nessusFiles) {
+              fileNewVulns[file.name].push(finding.title)
+            }
+          }
+        }
+
+        // Build debug display
+        let hasNewVulns = false
+        for (const file of this.nessusFiles) {
+          const newVulnsForFile = [...new Set(fileNewVulns[file.name])] // Remove duplicates
+          
+          if (newVulnsForFile.length > 0) {
+            debugInfo.push(`📄 ${file.name}:`)
+            debugInfo.push(...newVulnsForFile.map(title => `  • ${title}`))
+            hasNewVulns = true
+          } else {
+            debugInfo.push(`📄 ${file.name}: No new vulnerabilities`)
+          }
+        }
+
+        this.nessusDebugInfo = hasNewVulns
+          ? ['New vulnerabilities by file:', ...debugInfo]
+          : ['File analysis:', ...debugInfo]
         
       } catch (error) {
         console.error('Error parsing files:', error)
@@ -1053,7 +1128,30 @@ export default defineComponent({
           pingcastleMap // <--- pass the map here
         )
         await parser.parse()
-        
+
+        // Build debug info - simpler approach
+        const debugInfo = []
+        const unmatchedRiskIds = Array.from(parser.unmatchedRiskIds || [])
+
+        if (unmatchedRiskIds.length > 0) {
+          // Show unmatched risks for all files (since we can't track which specific file they came from)
+          for (const file of this.pingCastleFiles) {
+            debugInfo.push(`📄 ${file.name}: Contains unmatched risks`)
+          }
+          debugInfo.push('') // Add empty line for spacing
+          debugInfo.push('⚠️ Missing Risk Mappings:')
+          debugInfo.push(...unmatchedRiskIds.map(riskId => `  • ${riskId}`))
+          
+          this.pingcastleDebugInfo = ['Unmatched risk IDs found:', ...debugInfo]
+        } else {
+          // Show success for all files
+          for (const file of this.pingCastleFiles) {
+            debugInfo.push(`📄 ${file.name}: All risks matched`)
+          }
+          
+          this.pingcastleDebugInfo = ['File analysis:', ...debugInfo]
+        }
+
         // Store findings by file for tracking (simplified approach)
         for (const file of this.pingCastleFiles) {
           this.pingCastleFileFindingsMap[file.name] = parser.findings
@@ -1082,10 +1180,10 @@ export default defineComponent({
         })
         
         // After await parser.parse()
-        const unmatchedRiskIds = Array.from(parser.unmatchedRiskIds || []);
-        this.pingcastleDebugInfo = unmatchedRiskIds.length
-          ? ['Unmatched PingCastle risk IDs:', ...unmatchedRiskIds]
-          : ['All risks matched the current map.'];
+        //const unmatchedRiskIds = Array.from(parser.unmatchedRiskIds || []);
+        //this.pingcastleDebugInfo = unmatchedRiskIds.length
+        //  ? ['Unmatched PingCastle risk IDs:', ...unmatchedRiskIds]
+        // : ['All risks matched the current map.'];
         
       } catch (error) {
         console.error('Error parsing PingCastle files:', error)
