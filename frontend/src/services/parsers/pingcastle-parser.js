@@ -88,7 +88,7 @@ export class PingCastleParser extends BaseParser {
    */
   async _extractVulns(files) {
     const vulns = []
-    const unmatchedRiskIds = new Set()
+    this.unmatchedRiskIds = new Set() // Track unmatched risks
 
     for (const file of files) {
       try {
@@ -115,18 +115,9 @@ export class PingCastleParser extends BaseParser {
             }
             vulns.push(vuln)
           } else {
-            unmatchedRiskIds.add(riskId)
+            this.unmatchedRiskIds.add(riskId)
           }
         }
-
-        // Log unmatched risk IDs for this file
-        if (unmatchedRiskIds.size > 0) {
-          console.log(
-            `Unmatched PingCastle risk IDs in file ${file.name}:`,
-            Array.from(unmatchedRiskIds)
-          )
-        }
-        unmatchedRiskIds.clear()
 
       } catch (error) {
         console.error(`Error parsing PingCastle file ${file.name}:`, error)

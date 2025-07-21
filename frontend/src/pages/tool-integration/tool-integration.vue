@@ -30,12 +30,11 @@
               <q-tab-panel name="nessus">
                 <div class="text-h6">{{ $t('toolIntegration.nessus.title') }}</div>
                 <div class="text-body2 q-mb-md">{{ $t('toolIntegration.nessus.description') }}</div>
-                
                 <q-card flat bordered>
                   <q-card-section>
-                    <div class="row q-gutter-md">
-                      <div class="col-12 col-md-6">
-                        <!-- Drag & Drop File Upload -->
+                    <div style="display: flex; flex-direction: row; width: 100%;" class="q-mb-md">
+                      <!-- Drop zone and file input (LEFT) -->
+                      <div style="flex: 1; min-width: 0;" class="q-mr-md">
                         <div
                           class="upload-area"
                           :class="{ 'upload-area-dragover': isDragOver }"
@@ -81,6 +80,47 @@
                             </q-chip>
                           </div>
                         </div>
+                      </div>
+                      <!-- Debug info panel (RIGHT) -->
+                      <div style="flex: 1; min-width: 0;">
+                        <q-card flat bordered>
+                          <q-card-section>
+                            <div class="text-h6 q-mb-md">
+                              <q-icon name="fa fa-info-circle" class="q-mr-sm" />
+                              Debug Info
+                            </div>
+                            <div v-if="nessusDebugInfo.length === 0" class="text-body2 text-grey-6">
+                              No debug information available
+                            </div>
+                            <div v-else>
+                              <div v-if="nessusDebugInfo[0] === 'No new vulnerabilities detected.'" class="q-mb-sm">
+                                <q-chip color="green" text-color="white" icon="fa fa-check-circle">
+                                  {{ nessusDebugInfo[0] }}
+                                </q-chip>
+                              </div>
+                              <div v-else>
+                                <div class="text-subtitle2 q-mb-sm text-orange-8">
+                                  <q-icon name="fa fa-plus-circle" class="q-mr-xs" />
+                                  {{ nessusDebugInfo[0] }}
+                                </div>
+                                <div class="debug-list">
+                                  <q-chip
+                                    v-for="(info, idx) in nessusDebugInfo.slice(1)"
+                                    :key="idx"
+                                    color="orange"
+                                    text-color="white"
+                                    dense
+                                    class="q-ma-xs"
+                                    size="sm"
+                                  >
+                                    <q-icon name="fa fa-file-medical" size="xs" class="q-mr-xs" />
+                                    {{ info }}
+                                  </q-chip>
+                                </div>
+                              </div>
+                            </div>
+                          </q-card-section>
+                        </q-card>
                       </div>
                     </div>
 
@@ -192,12 +232,11 @@
               <q-tab-panel name="pingcastle">
                 <div class="text-h6">{{ $t('toolIntegration.pingcastle.title') }}</div>
                 <div class="text-body2 q-mb-md">{{ $t('toolIntegration.pingcastle.description') }}</div>
-                
                 <q-card flat bordered>
                   <q-card-section>
-                    <div class="row q-gutter-md">
-                      <div class="col-12 col-md-6">
-                        <!-- Drag & Drop File Upload -->
+                    <div style="display: flex; flex-direction: row; width: 100%;" class="q-mb-md">
+                      <!-- Drop zone and file input (LEFT) -->
+                      <div style="flex: 1; min-width: 0;" class="q-mr-md">
                         <div
                           class="upload-area"
                           :class="{ 'upload-area-dragover': isPingCastleDragOver }"
@@ -243,6 +282,47 @@
                             </q-chip>
                           </div>
                         </div>
+                      </div>
+                      <!-- Debug info panel (RIGHT) -->
+                      <div style="flex: 1; min-width: 0;">
+                        <q-card flat bordered>
+                          <q-card-section>
+                            <div class="text-h6 q-mb-md">
+                              <q-icon name="fa fa-info-circle" class="q-mr-sm" />
+                              Debug Info
+                            </div>
+                            <div v-if="pingcastleDebugInfo.length === 0" class="text-body2 text-grey-6">
+                              No debug information available
+                            </div>
+                            <div v-else>
+                              <div v-if="pingcastleDebugInfo[0] === 'All risks matched the current map.'" class="q-mb-sm">
+                                <q-chip color="green" text-color="white" icon="fa fa-check-circle">
+                                  {{ pingcastleDebugInfo[0] }}
+                                </q-chip>
+                              </div>
+                              <div v-else>
+                                <div class="text-subtitle2 q-mb-sm text-red-8">
+                                  <q-icon name="fa fa-exclamation-triangle" class="q-mr-xs" />
+                                  {{ pingcastleDebugInfo[0] }}
+                                </div>
+                                <div class="debug-list">
+                                  <q-chip
+                                    v-for="(info, idx) in pingcastleDebugInfo.slice(1)"
+                                    :key="idx"
+                                    color="red"
+                                    text-color="white"
+                                    dense
+                                    class="q-ma-xs"
+                                    size="sm"
+                                  >
+                                    <q-icon name="fa fa-question-circle" size="xs" class="q-mr-xs" />
+                                    {{ info }}
+                                  </q-chip>
+                                </div>
+                              </div>
+                            </div>
+                          </q-card-section>
+                        </q-card>
                       </div>
                     </div>
 
@@ -446,7 +526,9 @@ export default defineComponent({
           align: 'center',
           sortable: true
         }
-      ]
+      ],
+      nessusDebugInfo: [],
+      pingcastleDebugInfo: [],
     }
   },
 
@@ -592,6 +674,19 @@ export default defineComponent({
           color: 'positive',
           position: 'top-right'
         })
+        
+        // After parsing and before import
+        const VulnerabilityService = (await import('@/services/vulnerability')).default;
+        const response = await VulnerabilityService.getVulnerabilities();
+        const allDBVulns = response.data.datas || [];
+
+        const newVulns = parser.findings.filter(finding =>
+          !allDBVulns.some(vuln => vuln.details.some(detail => detail.title === finding.title))
+        ).map(finding => finding.title);
+
+        this.nessusDebugInfo = newVulns.length
+          ? ['New vulnerabilities to be added:', ...newVulns]
+          : ['No new vulnerabilities detected.'];
         
       } catch (error) {
         console.error('Error parsing files:', error)
@@ -984,6 +1079,12 @@ export default defineComponent({
           position: 'top-right'
         })
         
+        // After await parser.parse()
+        const unmatchedRiskIds = Array.from(parser.unmatchedRiskIds || []);
+        this.pingcastleDebugInfo = unmatchedRiskIds.length
+          ? ['Unmatched PingCastle risk IDs:', ...unmatchedRiskIds]
+          : ['All risks matched the current map.'];
+        
       } catch (error) {
         console.error('Error parsing PingCastle files:', error)
         Notify.create({
@@ -1215,4 +1316,4 @@ export default defineComponent({
 :deep(.vulnerability-table td:nth-child(2)) {
   background-color: #f5f5f5 !important;
 }
-</style> 
+</style>
