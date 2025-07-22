@@ -172,7 +172,7 @@ export class NessusParser extends BaseParser {
       if (!vulnGroups[key]) {
         vulnGroups[key] = {
           title: vuln.pluginName,
-          vulnType: 'Vulnerability',
+          vulnType: 'Infrastructure',
           description: vuln.description || vuln.synopsis,
           observation: vuln.synopsis,
           remediation: vuln.solution,
@@ -180,7 +180,7 @@ export class NessusParser extends BaseParser {
           cvssv3: vuln.cvssBaseScore,
           priority: this._severityToPriority(vuln.severity),
           remediationComplexity: this._severityToComplexity(vuln.severity),
-          category: this._determineCategory(vuln),
+          category: 'Nessus',
           scope: [],
           hosts: []
         }
@@ -334,39 +334,6 @@ export class NessusParser extends BaseParser {
     return references.split(/\n|,|;/)
       .map(ref => ref.trim())
       .filter(ref => ref.length > 0)
-  }
-
-  _determineCategory(vuln) {
-    // Use plugin family if available, otherwise fall back to name-based detection
-    if (vuln.pluginFamily) {
-      const family = vuln.pluginFamily.toLowerCase()
-      if (family.includes('web') || family.includes('http')) {
-        return 'Web Security'
-      } else if (family.includes('network') || family.includes('ssl') || family.includes('tls')) {
-        return 'Network Security'
-      } else if (family.includes('windows') || family.includes('linux') || family.includes('unix')) {
-        return 'System Security'
-      } else if (family.includes('database') || family.includes('sql')) {
-        return 'Database Security'
-      } else if (family.includes('application')) {
-        return 'Application Security'
-      }
-    }
-    
-    // Fallback to name-based detection
-    const title = vuln.pluginName.toLowerCase()
-    
-    if (title.includes('ssl') || title.includes('tls')) {
-      return 'Network Security'
-    } else if (title.includes('http') || title.includes('web')) {
-      return 'Web Security'
-    } else if (title.includes('sql') || title.includes('injection')) {
-      return 'Application Security'
-    } else if (title.includes('windows') || title.includes('linux')) {
-      return 'System Security'
-    } else {
-      return 'Network Security'
-    }
   }
 
   /**
