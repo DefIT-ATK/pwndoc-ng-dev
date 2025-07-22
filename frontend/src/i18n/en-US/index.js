@@ -568,7 +568,8 @@ export default {
             parseError: 'Error parsing Nessus file',
             importSuccess: 'Successfully imported {count} vulnerabilities to {audit}',
             importError: 'Error importing vulnerabilities',
-            noVulnerabilities: 'No vulnerabilities selected for import'
+            noVulnerabilities: 'No vulnerabilities selected for import',
+            noFileSelected: 'No Nessus file selected'
         },
         pingcastle: {
             title: 'PingCastle AD Health Check',

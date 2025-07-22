@@ -85,7 +85,7 @@ export class BaseParser {
     }
 
     try {
-      // Get all existing vulnerabilities from database
+      // Get existing vulnerabilities from database
       const response = await VulnerabilityService.getVulnerabilities()
       const allPwndocDBVulns = response.data.datas || []
       
@@ -93,19 +93,19 @@ export class BaseParser {
       const vulnsToAdd = []
 
       for (const finding of findings) {
-        if (!this._checkIfTitleMatches(allPwndocDBVulns, finding.title) && 
-            !alreadyAdded.includes(finding.title)) {
-          
+        const titleExists = this._checkIfTitleMatches(allPwndocDBVulns, finding.title)
+        const alreadyInBatch = alreadyAdded.includes(finding.title)
+        
+        if (!titleExists && !alreadyInBatch) {
           const vulnData = this._findingToPwndocDB(finding)
           vulnsToAdd.push(vulnData)
           alreadyAdded.push(finding.title)
-          
-          console.log(`[DB] Adding '${finding.title}' to the Database`)
         }
       }
 
       if (vulnsToAdd.length > 0) {
         await VulnerabilityService.createVulnerabilities(vulnsToAdd)
+        
         Notify.create({
           message: `Added ${vulnsToAdd.length} new vulnerabilities to database`,
           color: 'positive',
@@ -199,19 +199,22 @@ export class BaseParser {
    * Convert finding to PwnDoc database format
    */
   _findingToPwndocDB(finding) {
+    // Match the exact format used by the UI
     return {
-      cvssv3: finding.cvssv3 || null,
-      priority: finding.priority || null,
-      remediationComplexity: finding.remediationComplexity || null,
-      category: finding.category || 'Uncategorized',
+      cvssv3: finding.cvssv3 || "",
+      priority: finding.priority !== undefined ? finding.priority : "",
+      remediationComplexity: finding.remediationComplexity !== undefined ? finding.remediationComplexity : "",
+      category: finding.category || "",
       details: [{
-        locale: 'en',
+        locale: "EN", // Match UI format (uppercase)
         title: finding.title,
-        vulnType: finding.vulnType || 'Vulnerability',
-        description: finding.description || '',
-        observation: finding.observation || '',
-        remediation: finding.remediation || '',
-        references: finding.references || []
+        vulnType: finding.vulnType || "",
+        updatedAt: "", // Match UI format
+        description: finding.description || "",
+        observation: finding.observation || "",
+        remediation: finding.remediation || "",
+        references: finding.references || [],
+        customFields: [] // Match UI format
       }]
     }
   }
@@ -220,7 +223,7 @@ export class BaseParser {
    * Create new finding from PwnDoc database vulnerability
    */
   _newFindingFromPwndocDB(vulnFromDB) {
-    const detail = vulnFromDB.details.find(d => d.locale === 'en') || vulnFromDB.details[0]
+    const detail = vulnFromDB.details.find(d => d.locale === 'EN') || vulnFromDB.details[0]
     
     return {
       title: detail.title,
