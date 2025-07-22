@@ -87,6 +87,8 @@ export default defineComponent({
       if (newFiles.length > 0) {
         emit('files-changed', newFiles)
       }
+      // Clear the input value to allow re-selecting the same file
+      event.target.value = ''
     }
     
     const onFileDrop = (event) => {
