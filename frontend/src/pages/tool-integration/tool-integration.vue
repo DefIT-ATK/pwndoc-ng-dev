@@ -20,6 +20,7 @@
             >
               <q-tab name="nessus" :label="$t('toolIntegration.tools.nessus')" />
               <q-tab name="pingcastle" :label="$t('toolIntegration.tools.pingcastle')" />
+              <q-tab name="acunetix" :label="$t('toolIntegration.tools.acunetix')" />
               <q-tab name="custom" :label="$t('toolIntegration.tools.custom')" />
             </q-tabs>
 
@@ -35,6 +36,13 @@
 
               <q-tab-panel name="pingcastle">
                 <PingCastleTab 
+                  :audits="auditOptions"
+                  :loading-audits="loadingAudits"
+                />
+              </q-tab-panel>
+
+              <q-tab-panel name="acunetix">
+                <AcunetixTab 
                   :audits="auditOptions"
                   :loading-audits="loadingAudits"
                 />
@@ -58,6 +66,7 @@ import { defineComponent, ref, onMounted, provide, getCurrentInstance } from 'vu
 import { Notify } from 'quasar'
 import NessusTab from './components/nessus-tab.vue'
 import PingCastleTab from './components/pingcastle-tab.vue'
+import AcunetixTab from './components/acunetix-tab.vue'
 import CustomTab from './components/custom-tab.vue'
 import AuditService from '@/services/audit'
 
@@ -67,6 +76,7 @@ export default defineComponent({
   components: {
     NessusTab,
     PingCastleTab,
+    AcunetixTab,
     CustomTab
   },
 

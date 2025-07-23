@@ -554,6 +554,7 @@ export default {
         tools: {
             nessus: 'Nessus',
             pingcastle: 'PingCastle',
+            acunetix: 'Acunetix',
             custom: 'Custom Tool'
         },
         nessus: {
@@ -585,6 +586,21 @@ export default {
             importError: 'Error importing vulnerabilities',
             noVulnerabilities: 'No vulnerabilities selected for import',
             noFileSelected: 'No PingCastle file selected'
+        },
+        acunetix: {
+            title: 'Acunetix Web Application Scanner',
+            description: 'Import vulnerabilities from Acunetix web application scan results (.xml or .json format)',
+            selectFile: 'Select Acunetix output file (.xml, .json)',
+            dragDropTitle: 'Drop Acunetix files here',
+            dragDropSubtitle: 'or click to browse files',
+            supportedFormats: 'Supported formats: .xml, .json',
+            import: 'Import Selected Vulnerabilities',
+            parseSuccess: 'Successfully parsed {unique} unique vulnerabilities from {total} total findings',
+            parseError: 'Error parsing Acunetix file',
+            importSuccess: 'Successfully imported {count} vulnerabilities to {audit}',
+            importError: 'Error importing vulnerabilities',
+            noVulnerabilities: 'No vulnerabilities selected for import',
+            noFileSelected: 'No Acunetix file selected'
         },
         custom: {
             title: 'Custom Tool',
