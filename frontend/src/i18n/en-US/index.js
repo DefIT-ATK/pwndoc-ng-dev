@@ -551,6 +551,7 @@ export default {
     toolIntegration: {
         title: 'Tool Integration',
         subtitle: 'Import vulnerabilities from various security tools',
+        duplicateFile: 'File(s) already selected: {files}',
         tools: {
             nessus: 'Nessus',
             pingcastle: 'PingCastle',

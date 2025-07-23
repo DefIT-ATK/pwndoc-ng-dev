@@ -25,6 +25,7 @@ The PwnDoc-ng parser system follows a modular architecture with the following ke
 - **Database Integration**: Automatic vulnerability database lookup and merging
 - **CVSS Support**: Proper CVSS vector parsing and severity calculation
 - **Multi-file Support**: Individual file parsing with cross-file merging capabilities
+- **Duplicate Prevention**: Automatic prevention of importing the same file multiple times
 
 ## Architecture Components
 
@@ -116,6 +117,9 @@ export function useExampleToolParser() {
     removeFile,
     clearFiles
   } = useFileHandling(['.xml', '.json'], parseAllFiles)
+  
+  // Note: useFileHandling automatically prevents duplicate file imports by filename
+  // and shows a user-friendly warning notification for any duplicates
   
   // Import functionality
   const {
@@ -337,6 +341,12 @@ Update `/frontend/src/i18n/en-US/index.js`:
 
 ```javascript
 // Add to toolIntegration section
+toolIntegration: {
+  title: 'Tool Integration',
+  subtitle: 'Import vulnerabilities from various security tools',
+  duplicateFile: 'File(s) already selected: {files}', // Required for duplicate prevention
+  // ... other shared keys
+},
 exampleTool: {
   title: 'Example Tool',
   description: 'Import vulnerabilities from Example Tool export files',
