@@ -50,8 +50,8 @@
       <q-card>
         <q-card-section class="text-center">
           <q-spinner-hourglass size="40px" color="primary" />
-          <div class="text-h6 q-mt-md">Parsing Acunetix files...</div>
-          <div class="text-body2 text-grey-6">Please wait while we process your scan results</div>
+          <div class="text-h6 q-mt-md">{{ $t('toolIntegration.acunetix.parsingFiles') }}</div>
+          <div class="text-body2 text-grey-6">{{ $t('toolIntegration.parsingSubtitle') }}</div>
         </q-card-section>
       </q-card>
     </div>

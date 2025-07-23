@@ -340,11 +340,11 @@ export default {
 Update `/frontend/src/i18n/en-US/index.js`:
 
 ```javascript
-// Add to toolIntegration section
 toolIntegration: {
   title: 'Tool Integration',
   subtitle: 'Import vulnerabilities from various security tools',
   duplicateFile: 'File(s) already selected: {files}', // Required for duplicate prevention
+  parsingSubtitle: 'Please wait while we process your scan results', // Required for parsing progress
   // ... other shared keys
 },
 exampleTool: {
@@ -357,6 +357,7 @@ exampleTool: {
   noFileSelected: 'Please select a file to parse',
   parseSuccess: '{unique} unique vulnerabilities parsed successfully (from {total} total)',
   parseError: 'Error parsing Example Tool file',
+  parsingFiles: 'Parsing Example Tool files...', // Required for parsing progress
   noVulnerabilities: 'No vulnerabilities selected for import'
 }
 ```
@@ -541,12 +542,44 @@ async function _getDatabaseValuesForPreview(findings, allDBVulns) {
 2. **DebugInfoPanel**: Debug information display
 3. **AuditSelection**: Audit selection dropdown
 4. **VulnerabilityPreview**: Preview table with selection
+5. **ParsingProgress**: Standardized parsing progress indicator (required pattern)
 
 ### Component Props
 
 - **totalOriginalFindings**: Pass to VulnerabilityPreview for correct count display
 - **acceptedFormats**: Array of supported file extensions
 - **uploadAreaProps**: Computed property for upload area configuration
+
+### Required UI Patterns
+
+#### Parsing Progress Section
+All parser tabs must include a standardized parsing progress indicator. You can either use the reusable `ParsingProgress` component or implement the pattern directly:
+
+**Option A: Using ParsingProgress Component (Recommended)**
+```vue
+<ParsingProgress
+  :visible="parsing"
+  :tool="'toolName'"
+/>
+```
+
+**Option B: Direct Implementation**
+```vue
+<!-- Parsing Progress -->
+<div v-if="parsing" class="q-mt-md">
+  <q-card>
+    <q-card-section class="text-center">
+      <q-spinner-hourglass size="40px" color="primary" />
+      <div class="text-h6 q-mt-md">{{ $t('toolIntegration.toolName.parsingFiles') }}</div>
+      <div class="text-body2 text-grey-6">{{ $t('toolIntegration.parsingSubtitle') }}</div>
+    </q-card-section>
+  </q-card>
+</div>
+```
+
+**Required translation keys:**
+- `toolIntegration.toolName.parsingFiles`: Tool-specific parsing message
+- `toolIntegration.parsingSubtitle`: Shared subtitle for all parsers
 
 ## Integration Requirements
 

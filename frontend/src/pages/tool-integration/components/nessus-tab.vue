@@ -1,6 +1,7 @@
 <template>
-  <div class="text-h6">{{ $t('toolIntegration.nessus.title') }}</div>
-  <div class="text-body2 q-mb-md">{{ $t('toolIntegration.nessus.description') }}</div>
+  <div class="nessus-tab">
+    <div class="text-h6">{{ $t('toolIntegration.nessus.title') }}</div>
+    <div class="text-body2 q-mb-md">{{ $t('toolIntegration.nessus.description') }}</div>
   
   <q-card flat bordered>
     <q-card-section>
@@ -43,6 +44,18 @@
       />
     </q-card-section>
   </q-card>
+
+  <!-- Parsing Progress -->
+  <div v-if="parsing" class="q-mt-md">
+    <q-card>
+      <q-card-section class="text-center">
+        <q-spinner-hourglass size="40px" color="primary" />
+        <div class="text-h6 q-mt-md">{{ $t('toolIntegration.nessus.parsingFiles') }}</div>
+        <div class="text-body2 text-grey-6">{{ $t('toolIntegration.parsingSubtitle') }}</div>
+      </q-card-section>
+    </q-card>
+  </div>
+  </div>
 </template>
 
 <script>
@@ -117,3 +130,9 @@ export default defineComponent({
   }
 })
 </script>
+
+<style scoped>
+.nessus-tab {
+  max-width: 100%;
+}
+</style>
