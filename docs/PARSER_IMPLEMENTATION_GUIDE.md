@@ -26,6 +26,7 @@ The PwnDoc-ng parser system follows a modular architecture with the following ke
 - **CVSS Support**: Proper CVSS vector parsing and severity calculation
 - **Multi-file Support**: Individual file parsing with cross-file merging capabilities
 - **Duplicate Prevention**: Automatic prevention of importing the same file multiple times
+- **File Persistence**: Files remain after import to enable re-importing to different audits
 
 ## Architecture Components
 
@@ -580,6 +581,42 @@ All parser tabs must include a standardized parsing progress indicator. You can 
 **Required translation keys:**
 - `toolIntegration.toolName.parsingFiles`: Tool-specific parsing message
 - `toolIntegration.parsingSubtitle`: Shared subtitle for all parsers
+
+#### Import Behavior Standards
+All parser import functions must follow these standards:
+
+**✅ DO:**
+- Keep uploaded files after successful import (allows re-import to different audits)
+- Clear only the selected vulnerabilities list (`selectedVulnerabilities.value = []`)
+- Preserve parsed results and debug information for user reference
+
+**❌ DON'T:**
+- Clear uploaded files (`clearFiles()`) after import
+- Reset all parser state (keeps user workflow intact)
+- Force users to re-upload files for multiple audit imports
+
+**Example Implementation:**
+```javascript
+async function importSelected() {
+  try {
+    // ... import logic
+    
+    if (result.success) {
+      showImportSuccess('toolName', result.findingsCount)
+      
+      // ✅ Clear only selections (keep files and parsed data)
+      selectedVulnerabilities.value = []
+      
+      // ❌ DON'T do this:
+      // clearFiles()
+      // parsedVulnerabilities.value = []
+      // debugInfo.value = []
+    }
+  } catch (error) {
+    // ... error handling
+  }
+}
+```
 
 ## Integration Requirements
 

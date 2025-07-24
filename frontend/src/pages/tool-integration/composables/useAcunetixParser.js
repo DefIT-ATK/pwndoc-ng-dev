@@ -443,13 +443,8 @@ export function useAcunetixParser() {
       if (result.success) {
         showImportSuccess('acunetix', result.findingsCount)
         
-        // Clear selected files and reset state
-        clearFiles()
-        parsedVulnerabilities.value = []
+        // Clear selections after successful import (but keep files)
         selectedVulnerabilities.value = []
-        debugInfo.value = []
-        totalVulnerabilities.value = 0
-        totalOriginalFindings.value = 0
       } else {
         throw new Error(result.error)
       }
