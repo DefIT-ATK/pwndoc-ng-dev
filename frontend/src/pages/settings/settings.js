@@ -2,6 +2,7 @@ import { Notify, Dialog } from 'quasar'
 
 import SettingsService from '@/services/settings'
 import UserService from '@/services/user'
+import AcunetixApiService from '@/services/acunetix-api'
 
 import { $t } from 'boot/i18n'
 import LanguageSelector from '@/components/language-selector';
@@ -21,6 +22,10 @@ export default {
         pingcastleMapJson: '',
         pingcastleMapJsonError: false,
         pingcastleMapJsonErrorMsg: '',
+        
+        // Acunetix connection testing
+        acunetixTesting: false,
+        acunetixConnectionStatus: null,
     }),
     components: {
         LanguageSelector
@@ -69,6 +74,16 @@ export default {
                 this.settings = data.data.datas || {};
                 if (!this.settings.danger) this.settings.danger = { enabled: false, public: { nbdaydelete: 0 } };
                 if (!this.settings.reviews) this.settings.reviews = { enabled: false, public: { minReviewers: 1 } };
+                
+                // Initialize toolIntegrations section if it doesn't exist
+                if (!this.settings.toolIntegrations) this.settings.toolIntegrations = {};
+                if (!this.settings.toolIntegrations.acunetix) {
+                    this.settings.toolIntegrations.acunetix = {
+                        serverAddress: '',
+                        email: '',
+                        password: ''
+                    };
+                }
                   
                 this.settingsOrig = this.$_.cloneDeep(this.settings);
                 // Populate the array for the table UI
@@ -144,6 +159,68 @@ export default {
             this.pingcastleMapJsonErrorMsg = '';
             this.pingcastleTab = 'table';
             this.pingcastleDialog = true;
+        },
+
+        async testAcunetixConnection() {
+            this.acunetixTesting = true;
+            this.acunetixConnectionStatus = null;
+
+            try {
+                const settings = this.settings.toolIntegrations?.acunetix || {};
+                
+                if (!settings.serverAddress || !settings.email || !settings.password) {
+                    throw new Error('Please fill in all connection settings');
+                }
+
+                // Test the connection
+                const result = await AcunetixApiService.testConnection(
+                    settings.serverAddress,
+                    settings.email, 
+                    settings.password
+                );
+                
+                this.acunetixConnectionStatus = {
+                    success: result,
+                    message: result ? 'Connection successful!' : 'Connection failed'
+                };
+
+                if (result) {
+                    Notify.create({
+                        message: 'Successfully connected to Acunetix',
+                        color: 'positive',
+                        position: 'top-right'
+                    });
+                } else {
+                    Notify.create({
+                        message: 'Connection failed',
+                        color: 'negative',
+                        position: 'top-right'
+                    });
+                }
+            } catch (error) {
+                console.error('Acunetix connection test failed:', error);
+                
+                // Extract the specific error message from the response
+                let errorMessage = 'Connection failed'
+                if (error.response?.data?.message) {
+                    errorMessage = error.response.data.message
+                } else if (error.message) {
+                    errorMessage = error.message
+                }
+                
+                this.acunetixConnectionStatus = {
+                    success: false,
+                    message: errorMessage
+                };
+                
+                Notify.create({
+                    message: `Connection test failed: ${errorMessage}`,
+                    color: 'negative',
+                    position: 'top-right'
+                });
+            } finally {
+                this.acunetixTesting = false;
+            }
         },
 
         updateSettings: function() {

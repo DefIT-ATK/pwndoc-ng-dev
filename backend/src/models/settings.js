@@ -140,6 +140,11 @@ const SettingSchema = new Schema({
         },
         nessus: {
             // Add nessus-specific settings here in the future
+        },
+        acunetix: {
+            serverAddress: { type: String, default: '' },
+            email: { type: String, default: '' },
+            password: { type: String, default: '' } // Note: This should be encrypted in production
         }
     }
 }, {strict: true});

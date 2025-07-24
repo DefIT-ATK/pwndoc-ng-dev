@@ -605,7 +605,25 @@ export default {
             importSuccess: 'Successfully imported {count} vulnerabilities to {audit}',
             importError: 'Error importing vulnerabilities',
             noVulnerabilities: 'No vulnerabilities selected for import',
-            noFileSelected: 'No Acunetix file selected'
+            noFileSelected: 'No Acunetix file selected',
+            // API Integration
+            apiConnection: 'API Connection',
+            serverAddress: 'Server Address',
+            email: 'Email',
+            password: 'Password',
+            connect: 'Connect',
+            disconnect: 'Disconnect',
+            connected: 'Connected to Acunetix',
+            notConnected: 'Not connected to Acunetix',
+            selectTargetGroup: 'Select Target Group',
+            refreshGroups: 'Refresh Groups',
+            exportVulnerabilities: 'Export Vulnerabilities',
+            parseAndPreview: 'Parse & Preview',
+            exporting: 'Exporting vulnerabilities...',
+            exportCompleted: 'Export completed successfully',
+            exportFailed: 'Export failed',
+            noTargetGroupSelected: 'Please select a target group',
+            targetGroupInfo: 'Target Group Information'
         },
         custom: {
             title: 'Custom Tool',

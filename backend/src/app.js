@@ -117,6 +117,10 @@ require('./routes/data')(app);
 require('./routes/image')(app);
 require('./routes/settings')(app);
 
+// Acunetix API proxy routes
+var acunetixRoutes = require('./routes/acunetix');
+app.use('/api/acunetix', acunetixRoutes);
+
 const { cronJobs } = require('./lib/cron');
 cronJobs();
 

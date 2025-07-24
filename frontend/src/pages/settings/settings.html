@@ -376,6 +376,65 @@
                 class="q-mb-md"
               />
             </q-card-section>
+            
+            <q-separator />
+            
+            <q-card-section>
+              <div class="text-bold">Acunetix API Integration</div>
+              <div class="text-grey-8 q-mb-md">
+                Configure connection settings for direct Acunetix API integration. This allows importing vulnerabilities directly from Acunetix target groups without manual export.
+              </div>
+              
+              <div class="row q-gutter-md">
+                <div class="col-12 col-md-5">
+                  <q-input
+                    v-model="settings.toolIntegrations.acunetix.serverAddress"
+                    label="Server Address"
+                    placeholder="https://acunetix.example.com"
+                    outlined
+                    :disable="!canEdit"
+                    hint="Full URL to your Acunetix server (including https://)"
+                  />
+                </div>
+                <div class="col-12 col-md-3">
+                  <q-input
+                    v-model="settings.toolIntegrations.acunetix.email"
+                    label="Email"
+                    type="email"
+                    outlined
+                    :disable="!canEdit"
+                    hint="Acunetix login email"
+                  />
+                </div>
+                <div class="col-12 col-md-3">
+                  <q-input
+                    v-model="settings.toolIntegrations.acunetix.password"
+                    label="Password"
+                    type="password"
+                    outlined
+                    :disable="!canEdit"
+                    hint="Acunetix login password"
+                  />
+                </div>
+              </div>
+              
+              <div class="q-mt-md">
+                <q-btn
+                  color="primary"
+                  label="Test Connection"
+                  @click="testAcunetixConnection"
+                  :loading="acunetixTesting"
+                  :disable="!canEdit || !settings.toolIntegrations.acunetix.serverAddress || !settings.toolIntegrations.acunetix.email || !settings.toolIntegrations.acunetix.password"
+                  class="q-mr-sm"
+                />
+                <q-chip
+                  v-if="acunetixConnectionStatus"
+                  :color="acunetixConnectionStatus.success ? 'positive' : 'negative'"
+                  text-color="white"
+                  :label="acunetixConnectionStatus.message"
+                />
+              </div>
+            </q-card-section>
           </q-card>
 
         <q-card class="q-my-lg" v-if="canEdit" align="center">
