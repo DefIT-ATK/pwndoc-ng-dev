@@ -173,6 +173,8 @@ export function useAcunetixApi() {
     
     try {
       const groups = await AcunetixApiService.getTargetGroups()
+      console.log('Raw groups from service:', groups)
+      
       targetGroups.value = groups
         .filter(group => group.name && group.name.trim() !== '') // Filter out groups without names
         .map(group => ({

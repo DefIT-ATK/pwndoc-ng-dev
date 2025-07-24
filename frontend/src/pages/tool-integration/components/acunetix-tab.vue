@@ -121,56 +121,149 @@
               </div>
             </div>
 
-                        <!-- Target Group Selection -->
+            <!-- Target Group Selection -->
             <div v-if="connected" class="q-mb-md">
-              <div class="text-subtitle1 q-mb-md">Select Target Groups</div>
-              
-              <div class="row q-gutter-md">
-                <div class="col-12 col-md-8">
-                  <q-select
-                    v-model="selectedTargetGroups"
-                    :options="targetGroups"
-                    :loading="loadingTargetGroups"
-                    label="Target Groups"
-                    outlined
-                    multiple
-                    use-chips
-                    map-options
-                    emit-value
-                    clearable
-                    @update:model-value="onTargetGroupsChange"
-                  >
-                    <template v-slot:option="scope">
-                      <q-item v-bind="scope.itemProps">
-                        <q-item-section>
-                          <q-item-label>{{ scope.opt.label }}</q-item-label>
-                          <q-item-label caption v-if="scope.opt.description">
-                            {{ scope.opt.description }}
-                          </q-item-label>
-                        </q-item-section>
-                        <q-item-section side>
-                          <q-checkbox v-model="scope.selected" />
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                    <template v-slot:no-option>
-                      <q-item>
-                        <q-item-section class="text-grey">
-                          No target groups found
-                        </q-item-section>
-                      </q-item>
-                    </template>
-                  </q-select>
+              <div class="row items-center q-mb-md">
+                <div class="col">
+                  <div class="text-subtitle1">Select Target Groups</div>
+                  <div class="text-body2 text-grey-6">
+                    Choose one or more target groups to export vulnerabilities from
+                  </div>
                 </div>
-                <div class="col-12 col-md-3">
+                <div class="col-auto">
                   <q-btn
                     color="primary"
                     label="Refresh Groups"
                     :loading="loadingTargetGroups"
                     @click="loadTargetGroups"
                     outlined
+                    icon="refresh"
                   />
                 </div>
+              </div>
+
+              <!-- Target Groups Grid -->
+              <div v-if="targetGroups.length > 0" class="row q-gutter-md">
+                <div 
+                  v-for="group in targetGroups" 
+                  :key="group.value"
+                  class="col-12 col-md-6 col-lg-4"
+                >
+                  <q-card 
+                    flat 
+                    bordered
+                    class="target-group-card cursor-pointer"
+                    :class="{ 'selected': selectedTargetGroups.includes(group.value) }"
+                    @click="toggleTargetGroup(group.value)"
+                  >
+                    <q-card-section class="q-pa-md">
+                      <div class="row items-start no-wrap">
+                        <div class="col">
+                          <div class="text-subtitle1 text-weight-medium q-mb-xs">
+                            {{ group.name || 'Unnamed Group' }}
+                          </div>
+                          <div v-if="group.description" class="text-body2 text-grey-6 q-mb-sm">
+                            {{ group.description }}
+                          </div>
+                          <div class="q-mb-sm">
+                            <div class="row items-center q-gutter-sm text-caption text-grey-7 q-mb-xs">
+                              <div class="row items-center no-wrap">
+                                <q-icon name="language" size="14px" class="q-mr-xs" />
+                                <span>{{ group.targetCount || 0 }} targets</span>
+                              </div>
+                            </div>
+                            <div v-if="group.vulnCount" class="row items-center q-gutter-xs text-caption">
+                              <q-icon name="bug_report" size="14px" class="q-mr-xs text-grey-7" />
+                              <q-chip 
+                                v-if="group.vulnCount.critical > 0"
+                                size="sm" 
+                                color="red" 
+                                text-color="white" 
+                                :label="`${group.vulnCount.critical} Critical`"
+                                dense
+                              />
+                              <q-chip 
+                                v-if="group.vulnCount.high > 0"
+                                size="sm" 
+                                color="orange" 
+                                text-color="white" 
+                                :label="`${group.vulnCount.high} High`"
+                                dense
+                              />
+                              <q-chip 
+                                v-if="group.vulnCount.medium > 0"
+                                size="sm" 
+                                color="yellow-8" 
+                                text-color="white" 
+                                :label="`${group.vulnCount.medium} Medium`"
+                                dense
+                              />
+                              <q-chip 
+                                v-if="group.vulnCount.low > 0"
+                                size="sm" 
+                                color="green" 
+                                text-color="white" 
+                                :label="`${group.vulnCount.low} Low`"
+                                dense
+                              />
+                              <q-chip 
+                                v-if="group.vulnCount.info > 0"
+                                size="sm" 
+                                color="blue" 
+                                text-color="white" 
+                                :label="`${group.vulnCount.info} Info`"
+                                dense
+                              />
+                              <span v-if="getTotalVulnCount(group) === 0" class="text-grey-6">
+                                No vulnerabilities
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-auto">
+                          <q-checkbox 
+                            :model-value="selectedTargetGroups.includes(group.value)"
+                            @update:model-value="toggleTargetGroup(group.value)"
+                            color="primary"
+                            @click.stop
+                          />
+                        </div>
+                      </div>
+                    </q-card-section>
+                  </q-card>
+                </div>
+              </div>
+
+              <!-- Empty State -->
+              <div v-else-if="!loadingTargetGroups" class="text-center q-pa-lg">
+                <q-icon name="folder_open" size="48px" color="grey-5" />
+                <div class="text-h6 text-grey-6 q-mt-md">No Target Groups Found</div>
+                <div class="text-body2 text-grey-6">
+                  No target groups are available in your Acunetix instance.
+                </div>
+              </div>
+
+              <!-- Loading State -->
+              <div v-else class="text-center q-pa-lg">
+                <q-spinner-hourglass size="40px" color="primary" />
+                <div class="text-body2 text-grey-6 q-mt-md">Loading target groups...</div>
+              </div>
+
+              <!-- Selection Summary -->
+              <div v-if="selectedTargetGroups.length > 0" class="q-mt-md">
+                <q-banner rounded class="bg-blue-1 text-blue-8">
+                  <template v-slot:avatar>
+                    <q-icon name="info" color="blue" />
+                  </template>
+                  <div class="text-weight-medium">
+                    {{ selectedTargetGroups.length }} target group{{ selectedTargetGroups.length > 1 ? 's' : '' }} selected
+                  </div>
+                  <div class="text-body2 q-mt-xs">
+                    <span v-for="(groupId, index) in selectedTargetGroups" :key="groupId">
+                      {{ getTargetGroupName(groupId) }}{{ index < selectedTargetGroups.length - 1 ? ', ' : '' }}
+                    </span>
+                  </div>
+                </q-banner>
               </div>
             </div>
 
@@ -210,6 +303,7 @@
 
 <script>
 import { defineComponent, ref } from 'vue'
+import { Notify } from 'quasar'
 import FileUploadArea from './file-upload-area.vue'
 import AuditSelection from './audit-selection.vue'
 import VulnerabilityPreview from './vulnerability-preview.vue'
@@ -356,6 +450,30 @@ export default defineComponent({
       }
     }
 
+    // Toggle target group selection
+    const toggleTargetGroup = (groupId) => {
+      const index = selectedTargetGroups.value.indexOf(groupId)
+      if (index > -1) {
+        selectedTargetGroups.value.splice(index, 1)
+      } else {
+        selectedTargetGroups.value.push(groupId)
+      }
+      console.log('Target groups updated:', selectedTargetGroups.value)
+    }
+
+    // Get target group name by ID
+    const getTargetGroupName = (groupId) => {
+      const group = apiIntegration.targetGroups.value.find(tg => tg.value === groupId)
+      return group ? group.name : `Group ${groupId}`
+    }
+
+    // Calculate total vulnerability count for a group
+    const getTotalVulnCount = (group) => {
+      if (!group.vulnCount) return 0
+      const counts = group.vulnCount
+      return (counts.critical || 0) + (counts.high || 0) + (counts.medium || 0) + (counts.low || 0) + (counts.info || 0)
+    }
+
     // Auto-connect on mount
     apiIntegration.connect()
 
@@ -371,7 +489,10 @@ export default defineComponent({
       ...apiIntegration,
       selectedTargetGroups,
       onTargetGroupsChange,
-      exportSelectedGroups
+      exportSelectedGroups,
+      toggleTargetGroup,
+      getTargetGroupName,
+      getTotalVulnCount
     }
   }
 })
@@ -384,5 +505,34 @@ export default defineComponent({
 
 .q-tab-panel {
   padding: 0 !important;
+}
+
+.target-group-card {
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.target-group-card:hover {
+  border-color: var(--q-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.target-group-card.selected {
+  border-color: var(--q-primary);
+  background-color: rgba(25, 118, 210, 0.04);
+}
+
+.target-group-card.selected:hover {
+  background-color: rgba(25, 118, 210, 0.08);
+}
+
+.target-group-card .q-card__section {
+  padding: 16px;
+}
+
+.target-group-card .q-chip {
+  margin: 2px;
+  font-size: 11px;
+  min-height: 20px;
 }
 </style>

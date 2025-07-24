@@ -84,8 +84,14 @@ class AcunetixApiService {
           group_id: group.group_id,
           name: group.name,
           description: group.description || '',
-          target_count: group.targets?.length || 0,
-          vuln_count: this._parseVulnCount(group)
+          target_count: group.target_count || 0,
+          vuln_count: group.vuln_count || {
+            critical: 0,
+            high: 0,
+            medium: 0,
+            low: 0,
+            info: 0
+          }
         }))
       }
       
