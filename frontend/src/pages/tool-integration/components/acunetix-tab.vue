@@ -81,46 +81,6 @@
       <q-tab-panel name="api" class="q-pa-none">
         <q-card flat bordered>
           <q-card-section>
-            <!-- Connection Status -->
-            <div class="row q-mb-md">
-              <div class="col-12">
-                <q-banner
-                  :class="connected ? 'bg-positive text-white' : 'bg-grey-3'"
-                  rounded
-                >
-                  <template v-slot:avatar>
-                    <q-icon 
-                      :name="connected ? 'check_circle' : 'radio_button_unchecked'" 
-                      :color="connected ? 'white' : 'grey'" 
-                    />
-                  </template>
-                  
-                  <div class="text-subtitle1">
-                    {{ connected ? 'Connected to Acunetix' : 'Not connected to Acunetix' }}
-                  </div>
-                  
-                  <template v-slot:action>
-                    <q-btn
-                      v-if="!connected"
-                      :loading="connecting"
-                      color="primary"
-                      label="Connect"
-                      @click="connect"
-                      flat
-                    />
-                    <q-btn
-                      v-else
-                      color="white"
-                      text-color="positive"
-                      label="Disconnect"
-                      @click="disconnect"
-                      flat
-                    />
-                  </template>
-                </q-banner>
-              </div>
-            </div>
-
             <!-- Target Group Selection -->
             <div v-if="connected" class="q-mb-md">
               <div class="row items-center q-mb-md">
@@ -143,11 +103,12 @@
               </div>
 
               <!-- Target Groups Grid -->
-              <div v-if="targetGroups.length > 0" class="row q-gutter-md">
+              <div v-if="targetGroups.length > 0" class="row q-gutter-sm">
                 <div 
                   v-for="group in targetGroups" 
                   :key="group.value"
-                  class="col-12 col-md-6 col-lg-4"
+                  class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-3"
+                  style="min-width: 280px; max-width: 320px;"
                 >
                   <q-card 
                     flat 
@@ -527,12 +488,17 @@ export default defineComponent({
 }
 
 .target-group-card .q-card__section {
-  padding: 16px;
+  padding: 12px;
 }
 
 .target-group-card .q-chip {
-  margin: 2px;
-  font-size: 11px;
-  min-height: 20px;
+  margin: 1px;
+  font-size: 10px;
+  min-height: 18px;
+}
+
+.target-group-card {
+  min-height: 120px;
+  max-height: 140px;
 }
 </style>
