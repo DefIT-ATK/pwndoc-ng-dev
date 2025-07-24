@@ -163,6 +163,8 @@ export function useNessusParser() {
         return bScore - aScore
       })
       
+      // Auto-select all parsed vulnerabilities
+      selectedVulnerabilities.value = [...parsedVulnerabilities.value]
       totalVulnerabilities.value = parsedVulnerabilities.value.length
       
             // Generate debug info - PASS the DB data
@@ -449,9 +451,13 @@ export function useNessusParser() {
       const parser = new NessusParser(selectedAudit.value, [], true, false)
       
       // Import all original findings and let the parser handle merging
-      await parser.importSelectedFindings(allOriginalFindings)
+      const result = await parser.importSelectedFindings(allOriginalFindings)
       
-      showImportSuccess()
+      if (result.success) {
+        showImportSuccess('nessus', result.findingsCount)
+      } else {
+        throw new Error(result.error)
+      }
       
       // Clear selections after successful import
       selectedVulnerabilities.value = []

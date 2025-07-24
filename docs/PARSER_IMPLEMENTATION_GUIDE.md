@@ -446,6 +446,39 @@ const fileFindingsMap = ref({})            // Findings by filename
 3. **Merging Logic**: Cross-file and intra-file merging
 4. **CVSS Handling**: Use CVSS31 library for score calculation
 5. **Debug Info**: Generate meaningful debugging information
+6. **Auto-Selection**: Automatically select all parsed vulnerabilities for user convenience
+
+### Parsing Workflow Pattern
+
+All parsers should follow this standard workflow in `parseAllFiles()`:
+
+```javascript
+// 1. Clear existing data
+parsedVulnerabilities.value = []
+selectedVulnerabilities.value = []
+
+// 2. Parse files and merge findings
+const mergedFindings = await parser.parseAndMerge(files)
+
+// 3. Get database values for preview
+const previewFindings = await _getDatabaseValuesForPreview(mergedFindings, allDBVulns)
+parsedVulnerabilities.value = previewFindings
+
+// 4. Sort by CVSS score (highest first)
+parsedVulnerabilities.value.sort((a, b) => {
+  const aScore = a.cvssScore || 0
+  const bScore = b.cvssScore || 0
+  return bScore - aScore
+})
+
+// 5. Auto-select all parsed vulnerabilities
+selectedVulnerabilities.value = [...parsedVulnerabilities.value]
+
+// 6. Update totals
+totalVulnerabilities.value = parsedVulnerabilities.value.length
+```
+
+This ensures consistent user experience across all parsers - vulnerabilities are automatically selected, sorted by severity, and ready for import.
 
 ### CVSS Integration Pattern
 

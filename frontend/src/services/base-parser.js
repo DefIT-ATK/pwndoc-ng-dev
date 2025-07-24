@@ -40,13 +40,13 @@ export class BaseParser {
       // Add findings to PwnDoc database
       await this._addFindingsToPwndocDB(this.findings)
       
-      // Populate audit with findings
-      await this._populateAudit(this.findings)
+      // Populate audit with findings and get actual count added
+      const actualAddedCount = await this._populateAudit(this.findings)
       
       return {
         success: true,
         findings: this.findings, // Add this for preview
-        findingsCount: this.findings.length,
+        findingsCount: actualAddedCount || this.findings.length,
         vulnsCount: this.vulns.length,
         totalFindings: this.vulns.length // Add this for total count
       }
@@ -124,12 +124,12 @@ export class BaseParser {
   async _populateAudit(findings) {
     if (this.dryRun) {
       console.log('[DRY RUN] Would add findings to audit:', findings.length)
-      return
+      return findings.length
     }
 
     if (!this.auditId) {
       console.log('No audit ID provided, skipping audit population')
-      return
+      return findings.length
     }
 
     try {
@@ -154,9 +154,12 @@ export class BaseParser {
         }
       }
 
+      let actualAddedCount = vulnsToAdd.length
+
       if (this._merge) {
         console.log('Merge set to True: merging!')
         const merged = this._mergeVulns(vulnsToAdd)
+        actualAddedCount = merged.length
         for (const toAdd of merged) {
           await AuditService.createFinding(this.auditId, toAdd)
         }
@@ -166,11 +169,8 @@ export class BaseParser {
         }
       }
 
-      Notify.create({
-        message: `Added ${vulnsToAdd.length} findings to audit`,
-        color: 'positive',
-        position: 'top-right'
-      })
+      // Return the actual count for the success message in the composable
+      return actualAddedCount
     } catch (error) {
       console.error('Error populating audit:', error)
       throw error
@@ -419,12 +419,12 @@ export class BaseParser {
       // Add findings to PwnDoc database
       await this._addFindingsToPwndocDB(selectedFindings)
       
-      // Populate audit with findings
-      await this._populateAudit(selectedFindings)
+      // Populate audit with findings and get actual count added
+      const actualAddedCount = await this._populateAudit(selectedFindings)
       
       return {
         success: true,
-        findingsCount: selectedFindings.length
+        findingsCount: actualAddedCount || selectedFindings.length
       }
     } catch (error) {
       console.error('Error importing selected findings:', error)

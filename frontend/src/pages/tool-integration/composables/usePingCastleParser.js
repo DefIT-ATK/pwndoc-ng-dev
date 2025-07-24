@@ -96,6 +96,8 @@ export function usePingCastleParser(settings = null) {
         return bScore - aScore
       })
       
+      // Auto-select all parsed vulnerabilities
+      selectedVulnerabilities.value = [...parsedVulnerabilities.value]
       totalVulnerabilities.value = parsedVulnerabilities.value.length
       
       Notify.create({
@@ -278,9 +280,13 @@ export function usePingCastleParser(settings = null) {
       const parser = new PingCastleParser(selectedAudit.value, [], true, false, pingcastleMap)
       
       // Import all original findings and let the parser handle merging
-      await parser.importSelectedFindings(allOriginalFindings)
+      const result = await parser.importSelectedFindings(allOriginalFindings)
       
-      showImportSuccess('PingCastle')
+      if (result.success) {
+        showImportSuccess('PingCastle', result.findingsCount)
+      } else {
+        throw new Error(result.error)
+      }
       
       // Clear selections after successful import
       selectedVulnerabilities.value = []
