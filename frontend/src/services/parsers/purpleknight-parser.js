@@ -5,10 +5,17 @@ import * as XLSX from 'xlsx'
  * Parser for PurpleKnight Excel files
  */
 export default class PurpleKnightParser extends BaseParser {
-  constructor(auditId, filenames, merge = true, dryRun = false) {
+  constructor(auditId, filenames, merge = true, dryRun = false, purpleknightSettings = null) {
     super(auditId, filenames, merge, dryRun)
     this.name = 'PurpleKnight'
     this.supportedExtensions = ['.xlsx', '.xls']
+    
+    // Store PurpleKnight settings
+    this.purpleknightSettings = purpleknightSettings || {
+      exclusions: ['Ignored', 'EventTimestamp', 'ReplicationMetadata'],
+      rowsToShow: 25,
+      maxRowsBeforeLimit: 50
+    }
   }
 
   /**
@@ -336,7 +343,10 @@ export default class PurpleKnightParser extends BaseParser {
   /**
    * Parse result sheet to HTML table (following your Python implementation)
    */
-  _parseResultSheetToTable(workbook, sheetName, maxRows = 50, rowsNumber = 25) {
+  _parseResultSheetToTable(workbook, sheetName) {
+    // Get row settings from configuration
+    const { maxRows, rowsNumber } = this._getRowSettings()
+    
     if (!workbook.SheetNames.includes(sheetName)) {
       throw new Error(`Result sheet '${sheetName}' not found`)
     }
@@ -397,21 +407,31 @@ export default class PurpleKnightParser extends BaseParser {
    * Get column exclusions from settings or return defaults
    */
   _getColumnExclusions() {
-    try {
-      // Try to get settings from global store or localStorage
-      const settingsStr = localStorage.getItem('pwndoc-settings')
-      if (settingsStr) {
-        const settings = JSON.parse(settingsStr)
-        const exclusions = settings.toolIntegrations?.purpleknight?.exclusions
-        if (exclusions && Array.isArray(exclusions)) {
-          return exclusions
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to load PurpleKnight exclusions from settings:', error)
+    // Use constructor settings if available
+    if (this.purpleknightSettings && this.purpleknightSettings.exclusions) {
+      return this.purpleknightSettings.exclusions
     }
     
     // Return default exclusions if settings not available
     return ['Ignored', 'EventTimestamp', 'ReplicationMetadata']
+  }
+
+  /**
+   * Get row display settings from configuration or return defaults
+   */
+  _getRowSettings() {
+    // Use constructor settings if available
+    if (this.purpleknightSettings) {
+      return {
+        maxRows: this.purpleknightSettings.maxRowsBeforeLimit || 50,
+        rowsNumber: this.purpleknightSettings.rowsToShow || 25
+      }
+    }
+    
+    // Return default settings if configuration not available
+    return {
+      maxRows: 50,
+      rowsNumber: 25
+    }
   }
 }

@@ -104,6 +104,21 @@ export default {
                         maxReportWait: 120000
                     };
                 }
+                
+                // Ensure PurpleKnight settings exist with defaults
+                if (!this.settings.toolIntegrations.purpleknight) {
+                    this.settings.toolIntegrations.purpleknight = {
+                        exclusions: ['Ignored', 'EventTimestamp', 'ReplicationMetadata'],
+                        rowsToShow: 25,
+                        maxRowsBeforeLimit: 50
+                    };
+                }
+                if (!this.settings.toolIntegrations.purpleknight.rowsToShow) {
+                    this.settings.toolIntegrations.purpleknight.rowsToShow = 25;
+                }
+                if (!this.settings.toolIntegrations.purpleknight.maxRowsBeforeLimit) {
+                    this.settings.toolIntegrations.purpleknight.maxRowsBeforeLimit = 50;
+                }
                   
                 this.settingsOrig = this.$_.cloneDeep(this.settings);
                 // Populate the array for the table UI

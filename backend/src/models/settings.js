@@ -151,6 +151,26 @@ const SettingSchema = new Schema({
                 reportCheckInterval: { type: Number, default: 3000, min: 1000, max: 30000 }, // Report status check interval (ms)
                 maxReportWait: { type: Number, default: 120000, min: 30000, max: 1800000 } // Max wait per report (ms)
             }
+        },
+        purpleknight: {
+            exclusions: {
+                type: [String],
+                default: ['Ignored', 'EventTimestamp', 'ReplicationMetadata']
+            },
+            rowsToShow: {
+                type: Number,
+                default: 25,
+                min: 1,
+                max: 1000,
+                validate: [Number.isInteger, 'Invalid integer']
+            },
+            maxRowsBeforeLimit: {
+                type: Number,
+                default: 50,
+                min: 1,
+                max: 10000,
+                validate: [Number.isInteger, 'Invalid integer']
+            }
         }
     }
 }, {strict: true});

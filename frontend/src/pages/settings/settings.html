@@ -390,6 +390,33 @@
                 @click="openPurpleknightDialog"
                 class="q-mb-md"
               />
+              
+              <div class="row q-gutter-md q-mt-md">
+                <div class="col-12 col-md-5">
+                  <q-input
+                    v-model.number="settings.toolIntegrations.purpleknight.rowsToShow"
+                    type="number"
+                    label="Rows to Show in Tables"
+                    hint="Number of rows to display in result tables (default: 25)"
+                    outlined
+                    :disable="!canEdit"
+                    min="1"
+                    max="1000"
+                  />
+                </div>
+                <div class="col-12 col-md-5">
+                  <q-input
+                    v-model.number="settings.toolIntegrations.purpleknight.maxRowsBeforeLimit"
+                    type="number"
+                    label="Max Rows Before Limiting"
+                    hint="If total rows exceed this, limit to 'Rows to Show' (default: 50)"
+                    outlined
+                    :disable="!canEdit"
+                    min="1"
+                    max="10000"
+                  />
+                </div>
+              </div>
             </q-card-section>
             
             <q-separator />

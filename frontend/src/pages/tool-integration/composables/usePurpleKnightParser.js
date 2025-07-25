@@ -8,7 +8,7 @@ import { useVulnerabilityImport } from './useVulnerabilityImport'
 /**
  * Composable for PurpleKnight parsing functionality
  */
-export function usePurpleKnightParser() {
+export function usePurpleKnightParser(settings = null) {
   const parsedVulnerabilities = ref([])
   const selectedVulnerabilities = ref([])
   const debugInfo = ref([])
@@ -74,11 +74,16 @@ export function usePurpleKnightParser() {
 
       // Parse each file separately to track findings by file (following guide pattern)
       const allFindings = []
+      
+      // Get PurpleKnight settings to pass to parser
+      const purpleknightSettings = settings?.toolIntegrations?.purpleknight
+      console.log('PurpleKnight settings used by parser:', purpleknightSettings)
+      
       for (const file of purpleknightFiles.value) {
         try {
           console.log(`Parsing PurpleKnight file: ${file.name}`)
           
-          const parser = new PurpleKnightParser()
+          const parser = new PurpleKnightParser(null, [], true, false, purpleknightSettings)
           const findings = await parser.parseFile(file)
           
           // Track findings per file
@@ -366,8 +371,11 @@ export function usePurpleKnightParser() {
       console.log('Original findings count:', originalFindings.length)
       console.log('Target audit ID:', selectedAudit.value)
 
+      // Get PurpleKnight settings to pass to parser
+      const purpleknightSettings = settings?.toolIntegrations?.purpleknight
+
       // Create parser instance and import
-      const parser = new PurpleKnightParser(selectedAudit.value, [], true, false)
+      const parser = new PurpleKnightParser(selectedAudit.value, [], true, false, purpleknightSettings)
       const result = await parser.importSelectedFindings(originalFindings)
       
       if (result.success) {

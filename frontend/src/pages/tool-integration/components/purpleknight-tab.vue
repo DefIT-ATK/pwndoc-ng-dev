@@ -111,7 +111,7 @@ export default defineComponent({
       handleFileRemove,
       clearFiles,
       importSelected
-    } = usePurpleKnightParser()
+    } = usePurpleKnightParser(settings)
 
     return {
       // State
