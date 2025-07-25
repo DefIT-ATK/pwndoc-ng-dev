@@ -23,7 +23,7 @@ The PwnDoc-ng parser system follows a modular architecture with the following ke
 - **Composables**: Vue 3 composables handle parser logic and state management
 - **UI Components**: Reusable components for file upload, preview, and integration
 - **Database Integration**: Automatic vulnerability database lookup and merging
-- **CVSS Support**: Proper CVSS vector parsing and severity calculation
+- **CVSS Support**: Proper CVSS vector parsing and severity calculation (missing/invalid scores default to "None", not "Low")
 - **Multi-file Support**: Individual file parsing with cross-file merging capabilities
 - **Duplicate Prevention**: Automatic prevention of importing the same file multiple times
 - **File Persistence**: Files remain after import to enable re-importing to different audits
@@ -515,13 +515,35 @@ function _convertCvssVectorToScore(cvssVector) {
 
 function _cvssScoreToSeverity(cvssScore) {
   if (cvssScore === null || cvssScore === undefined || isNaN(cvssScore)) {
-    return 'Low'
+    return 'None'
   }
   
-  const severity = CVSS31.severityRating(cvssScore) || 'Low'
+  // Handle the case where CVSS score is 0 (should be "None")
+  if (cvssScore === 0) {
+    return 'None'
+  }
+  
+  const severity = CVSS31.severityRating(cvssScore) || 'None'
   return severity
 }
 ```
+
+#### CVSS Severity Standards
+
+**CRITICAL REQUIREMENT**: All parsers must handle missing/invalid CVSS scores consistently by defaulting to "None" severity, NOT "Low".
+
+This follows the CVSS 3.1 specification where:
+- Score 0.0 = "None" severity
+- Missing/null/undefined scores = "None" severity 
+- Invalid/NaN scores = "None" severity
+
+**Rationale**: 
+- Defaulting to "Low" severity creates false positives and inflates vulnerability counts
+- Vulnerabilities without CVSS scores should not be assumed to have any severity level
+- "None" accurately represents the absence of severity information
+- Consistent with CVSS 3.1 official specification
+
+**Implementation**: Use the standardized `_cvssScoreToSeverity()` function shown above in ALL parsers.
 
 ### Database Lookup Pattern
 

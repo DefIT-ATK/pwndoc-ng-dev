@@ -394,10 +394,15 @@ export function useAcunetixParser() {
   // Convert CVSS score to severity string (following Nessus pattern)
   function _cvssScoreToSeverity(cvssScore) {
     if (cvssScore === null || cvssScore === undefined || isNaN(cvssScore)) {
-      return 'Low'
+      return 'None'
     }
     
-    const severity = CVSS31.severityRating(cvssScore) || 'Low'
+    // Handle the case where CVSS score is 0 (should be "None")
+    if (cvssScore === 0) {
+      return 'None'
+    }
+    
+    const severity = CVSS31.severityRating(cvssScore) || 'None'
     return severity
   }
   
