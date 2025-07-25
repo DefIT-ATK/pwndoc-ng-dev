@@ -104,6 +104,7 @@ export class BaseParser {
       }
 
       if (vulnsToAdd.length > 0) {
+        console.log('Sending vulnerabilities to database:', JSON.stringify(vulnsToAdd, null, 2))
         await VulnerabilityService.createVulnerabilities(vulnsToAdd)
         
         Notify.create({
@@ -114,6 +115,8 @@ export class BaseParser {
       }
     } catch (error) {
       console.error('Error adding findings to database:', error)
+      console.error('Error response data:', error.response?.data)
+      console.error('Error status:', error.response?.status)
       throw error
     }
   }
@@ -199,8 +202,10 @@ export class BaseParser {
    * Convert finding to PwnDoc database format
    */
   _findingToPwndocDB(finding) {
+    console.log('_findingToPwndocDB input finding:', finding)
+    
     // Match the exact format used by the UI
-    return {
+    const result = {
       cvssv3: finding.cvssv3 || "",
       priority: finding.priority !== undefined ? finding.priority : "",
       remediationComplexity: finding.remediationComplexity !== undefined ? finding.remediationComplexity : "",
@@ -217,6 +222,9 @@ export class BaseParser {
         customFields: [] // Match UI format
       }]
     }
+    
+    console.log('_findingToPwndocDB output:', result)
+    return result
   }
 
   /**

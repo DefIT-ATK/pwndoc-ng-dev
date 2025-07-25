@@ -442,6 +442,8 @@ export default {
         tools: {
             nessus: 'Nessus',
             pingcastle: 'PingCastle',
+            acunetix: 'Acunetix',
+            purpleknight: 'PurpleKnight',
             custom: 'Outil Personnalisé'
         },
         nessus: {
@@ -472,6 +474,26 @@ export default {
             importError: 'Erreur lors de l\'import des vulnérabilités',
             noVulnerabilities: 'Aucune vulnérabilité sélectionnée pour l\'import',
             noFileSelected: 'Aucun fichier PingCastle sélectionné'
+        },
+        purpleknight: {
+            title: 'Évaluation de Sécurité Active Directory PurpleKnight',
+            description: 'Importer les vulnérabilités depuis les résultats d\'évaluation de sécurité Active Directory PurpleKnight (format .xlsx ou .xls)',
+            selectFile: 'Sélectionner un fichier de sortie PurpleKnight (.xlsx, .xls)',
+            dragDropTitle: 'Déposez les fichiers PurpleKnight ici',
+            dragDropSubtitle: 'ou cliquez pour parcourir les fichiers',
+            supportedFormats: 'Formats supportés : .xlsx, .xls',
+            import: 'Importer les Vulnérabilités Sélectionnées',
+            parseSuccess: 'Analyse réussie de {unique} vulnérabilités uniques sur {total} résultats totaux',
+            parseError: 'Erreur lors de l\'analyse du fichier PurpleKnight',
+            parsingFiles: 'Analyse des fichiers PurpleKnight...',
+            importSuccess: 'Import réussi de {count} vulnérabilités vers {audit}',
+            importError: 'Erreur lors de l\'import des vulnérabilités',
+            noVulnerabilities: 'Aucune vulnérabilité sélectionnée pour l\'import',
+            noFileSelected: 'Aucun fichier PurpleKnight sélectionné',
+            assessmentSummary: 'Résumé de l\'Évaluation',
+            forestName: 'Nom de la Forêt',
+            indicatorsFound: 'Indicateurs Trouvés',
+            weightDistribution: 'Distribution des Poids'
         },
         custom: {
             title: 'Outil Personnalisé',

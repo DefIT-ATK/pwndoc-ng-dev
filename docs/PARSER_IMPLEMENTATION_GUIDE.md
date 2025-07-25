@@ -763,8 +763,60 @@ toolIntegration: {
 5. **Documentation**: Clear comments and variable names
 6. **Testing**: Validate with real tool output files
 
+## Common Implementation Issues and Solutions
+
+### Template Structure Issues
+- **Problem**: Vue template compilation errors due to missing closing tags
+- **Solution**: Always ensure proper template structure with matching opening/closing tags
+- **Best Practice**: Compare with existing tab components (nessus-tab.vue, acunetix-tab.vue) for correct structure
+
+### Props vs Composables
+- **Problem**: Import errors when trying to use non-existent composables like `@/composables/useAudits`
+- **Solution**: Follow the established pattern where tabs receive `audits` and `loadingAudits` as props from the parent component
+- **Implementation**: 
+  ```javascript
+  props: {
+    audits: {
+      type: Array,
+      required: true
+    },
+    loadingAudits: {
+      type: Boolean,
+      default: false
+    }
+  }
+  ```
+
+### Method Name Consistency
+- **Problem**: Template calling methods that don't exist in the composable return object
+- **Solution**: Ensure template method calls match exactly with what the composable returns
+- **Example**: Use `importSelected` not `importVulnerabilities` in template if that's what the composable returns
+
+### CVSS Severity Standardization
+- **CRITICAL REQUIREMENT**: All parsers MUST return "None" for missing/invalid CVSS scores, NOT "Low"
+- **Implementation**: Use standardized `_cvssScoreToSeverity()` method across all parsers
+- **Pattern**: 
+  ```javascript
+  _cvssScoreToSeverity(score) {
+    if (!score || score === 0 || isNaN(score)) return 'None'
+    // ... rest of CVSS logic
+  }
+  ```
+
+### Translation Key Management
+- **Requirement**: Add translation keys for all UI text in all supported languages
+- **Languages**: English (en-US), French (fr-FR), German (de-DE), Chinese (zh-CN)
+- **Pattern**: `toolIntegration.tools.{parser}` and `toolIntegration.{parser}.*`
+
+### Dependency Management
+- **Best Practice**: Install required dependencies (e.g., `xlsx` for Excel parsing) before implementation
+- **Command**: `npm install --save {dependency}` in the frontend directory
+- **Verification**: Ensure dependency appears in `package.json`
+
 ## Conclusion
 
-This guide provides all necessary patterns and requirements for implementing new parsers in PwnDoc-ng. Always refer to existing implementations (Nessus, Acunetix, PingCastle) for concrete examples and follow the established architecture patterns for consistency and maintainability.
+This guide provides all necessary patterns and requirements for implementing new parsers in PwnDoc-ng. Always refer to existing implementations (Nessus, Acunetix, PingCastle, PurpleKnight) for concrete examples and follow the established architecture patterns for consistency and maintainability.
+
+**Recent Updates**: This guide has been updated with lessons learned from the PurpleKnight parser implementation, including common Vue.js template issues, props vs composables patterns, and CVSS severity standardization requirements.
 
 For questions or clarifications, consult the existing codebase or review the implementation patterns documented here.

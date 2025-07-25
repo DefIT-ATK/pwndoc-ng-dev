@@ -557,6 +557,7 @@ export default {
             nessus: 'Nessus',
             pingcastle: 'PingCastle',
             acunetix: 'Acunetix',
+            purpleknight: 'PurpleKnight',
             custom: 'Custom Tool'
         },
         nessus: {
@@ -626,6 +627,26 @@ export default {
             exportProgressDetails: 'Processing vulnerabilities in batches to avoid rate limiting...',
             noTargetGroupSelected: 'Please select a target group',
             targetGroupInfo: 'Target Group Information'
+        },
+        purpleknight: {
+            title: 'PurpleKnight Active Directory Security Assessment',
+            description: 'Import vulnerabilities from PurpleKnight Active Directory security assessment results (.xlsx or .xls format)',
+            selectFile: 'Select PurpleKnight output file (.xlsx, .xls)',
+            dragDropTitle: 'Drop PurpleKnight files here',
+            dragDropSubtitle: 'or click to browse files',
+            supportedFormats: 'Supported formats: .xlsx, .xls',
+            import: 'Import Selected Vulnerabilities',
+            parseSuccess: 'Successfully parsed {unique} unique vulnerabilities from {total} total findings',
+            parseError: 'Error parsing PurpleKnight file',
+            parsingFiles: 'Parsing PurpleKnight files...',
+            importSuccess: 'Successfully imported {count} vulnerabilities to {audit}',
+            importError: 'Error importing vulnerabilities',
+            noVulnerabilities: 'No vulnerabilities selected for import',
+            noFileSelected: 'No PurpleKnight file selected',
+            assessmentSummary: 'Assessment Summary',
+            forestName: 'Forest Name',
+            indicatorsFound: 'Indicators Found',
+            weightDistribution: 'Weight Distribution'
         },
         custom: {
             title: 'Custom Tool',

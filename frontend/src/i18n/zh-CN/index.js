@@ -514,6 +514,8 @@ export default {
         tools: {
             nessus: 'Nessus',
             pingcastle: 'PingCastle',
+            acunetix: 'Acunetix',
+            purpleknight: 'PurpleKnight',
             custom: '自定义工具'
         },
         nessus: {
@@ -544,6 +546,26 @@ export default {
             importError: '导入漏洞时出错',
             noVulnerabilities: '未选择要导入的漏洞',
             noFileSelected: '未选择PingCastle文件'
+        },
+        purpleknight: {
+            title: 'PurpleKnight Active Directory 安全评估',
+            description: '从PurpleKnight Active Directory安全评估结果导入漏洞（.xlsx或.xls格式）',
+            selectFile: '选择PurpleKnight输出文件（.xlsx，.xls）',
+            dragDropTitle: '将PurpleKnight文件拖放到这里',
+            dragDropSubtitle: '或点击浏览文件',
+            supportedFormats: '支持的格式：.xlsx，.xls',
+            import: '导入选定的漏洞',
+            parseSuccess: '成功解析了{total}个总发现中的{unique}个唯一漏洞',
+            parseError: '解析PurpleKnight文件时出错',
+            parsingFiles: '正在解析PurpleKnight文件...',
+            importSuccess: '成功将{count}个漏洞导入到{audit}',
+            importError: '导入漏洞时出错',
+            noVulnerabilities: '未选择要导入的漏洞',
+            noFileSelected: '未选择PurpleKnight文件',
+            assessmentSummary: '评估摘要',
+            forestName: '林名称',
+            indicatorsFound: '发现的指标',
+            weightDistribution: '权重分布'
         },
         custom: {
             title: '自定义工具',

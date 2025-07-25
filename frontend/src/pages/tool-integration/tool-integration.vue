@@ -21,6 +21,7 @@
               <q-tab name="nessus" :label="$t('toolIntegration.tools.nessus')" />
               <q-tab name="pingcastle" :label="$t('toolIntegration.tools.pingcastle')" />
               <q-tab name="acunetix" :label="$t('toolIntegration.tools.acunetix')" />
+              <q-tab name="purpleknight" :label="$t('toolIntegration.tools.purpleknight')" />
               <q-tab name="custom" :label="$t('toolIntegration.tools.custom')" />
             </q-tabs>
 
@@ -48,6 +49,13 @@
                 />
               </q-tab-panel>
 
+              <q-tab-panel name="purpleknight">
+                <PurpleKnightTab 
+                  :audits="auditOptions"
+                  :loading-audits="loadingAudits"
+                />
+              </q-tab-panel>
+
               <q-tab-panel name="custom">
                 <CustomTab 
                   :audits="auditOptions"
@@ -67,6 +75,7 @@ import { Notify } from 'quasar'
 import NessusTab from './components/nessus-tab.vue'
 import PingCastleTab from './components/pingcastle-tab.vue'
 import AcunetixTab from './components/acunetix-tab.vue'
+import PurpleKnightTab from './components/purpleknight-tab.vue'
 import CustomTab from './components/custom-tab.vue'
 import AuditService from '@/services/audit'
 
@@ -77,6 +86,7 @@ export default defineComponent({
     NessusTab,
     PingCastleTab,
     AcunetixTab,
+    PurpleKnightTab,
     CustomTab
   },
 

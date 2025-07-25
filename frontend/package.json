@@ -50,6 +50,7 @@
     "vue-sticky-directive": "^0.0.10",
     "vue3-sticky-directive": "^0.0.2",
     "vuedraggable": "^4.1.0",
+    "xlsx": "^0.18.5",
     "yjs": "^13.6.23"
   },
   "devDependencies": {

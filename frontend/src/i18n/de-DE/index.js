@@ -553,6 +553,8 @@ export default {
         tools: {
             nessus: 'Nessus',
             pingcastle: 'PingCastle',
+            acunetix: 'Acunetix',
+            purpleknight: 'PurpleKnight',
             custom: 'Benutzerdefiniertes Tool'
         },
         nessus: {
@@ -583,6 +585,26 @@ export default {
             importError: 'Fehler beim Importieren der Schwachstellen',
             noVulnerabilities: 'Keine Schwachstellen für Import ausgewählt',
             noFileSelected: 'Keine PingCastle-Datei ausgewählt'
+        },
+        purpleknight: {
+            title: 'PurpleKnight Active Directory Sicherheitsbewertung',
+            description: 'Schwachstellen aus PurpleKnight Active Directory Sicherheitsbewertungsergebnissen importieren (Format .xlsx oder .xls)',
+            selectFile: 'PurpleKnight-Ausgabedatei auswählen (.xlsx, .xls)',
+            dragDropTitle: 'PurpleKnight-Dateien hier ablegen',
+            dragDropSubtitle: 'oder klicken zum Durchsuchen',
+            supportedFormats: 'Unterstützte Formate: .xlsx, .xls',
+            import: 'Ausgewählte Schwachstellen importieren',
+            parseSuccess: '{unique} eindeutige Schwachstellen aus {total} Gesamtergebnissen erfolgreich analysiert',
+            parseError: 'Fehler beim Analysieren der PurpleKnight-Datei',
+            parsingFiles: 'PurpleKnight-Dateien werden analysiert...',
+            importSuccess: '{count} Schwachstellen erfolgreich in {audit} importiert',
+            importError: 'Fehler beim Importieren von Schwachstellen',
+            noVulnerabilities: 'Keine Schwachstellen für Import ausgewählt',
+            noFileSelected: 'Keine PurpleKnight-Datei ausgewählt',
+            assessmentSummary: 'Bewertungszusammenfassung',
+            forestName: 'Forest-Name',
+            indicatorsFound: 'Gefundene Indikatoren',
+            weightDistribution: 'Gewichtungsverteilung'
         },
         custom: {
             title: 'Benutzerdefiniertes Tool',
