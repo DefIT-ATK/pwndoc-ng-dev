@@ -435,6 +435,72 @@
                 />
               </div>
             </q-card-section>
+            
+            <q-separator />
+            
+            <q-card-section>
+              <div class="text-bold">Acunetix Export Throttling</div>
+              <div class="text-grey-8 q-mb-md">
+                Configure throttling settings to prevent rate limiting and improve export reliability for large vulnerability sets.
+              </div>
+              
+              <div class="row q-gutter-md">
+                <div class="col-12 col-md-2">
+                  <q-input
+                    v-model.number="settings.toolIntegrations.acunetix.throttling.chunkSize"
+                    label="Chunk Size"
+                    type="number"
+                    min="50"
+                    max="2000"
+                    outlined
+                    :disable="!canEdit"
+                    hint="Vulnerabilities per batch (50-2000)"
+                  />
+                </div>
+                <div class="col-12 col-md-3">
+                  <q-input
+                    v-model.number="settings.toolIntegrations.acunetix.throttling.throttleDelay"
+                    label="Throttle Delay (ms)"
+                    type="number"
+                    min="0"
+                    max="30000"
+                    outlined
+                    :disable="!canEdit"
+                    hint="Delay between batches in milliseconds"
+                  />
+                </div>
+                <div class="col-12 col-md-3">
+                  <q-input
+                    v-model.number="settings.toolIntegrations.acunetix.throttling.reportCheckInterval"
+                    label="Report Check Interval (ms)"
+                    type="number"
+                    min="1000"
+                    max="30000"
+                    outlined
+                    :disable="!canEdit"
+                    hint="How often to check report status"
+                  />
+                </div>
+                <div class="col-12 col-md-3">
+                  <q-input
+                    v-model.number="settings.toolIntegrations.acunetix.throttling.maxReportWait"
+                    label="Max Report Wait (ms)"
+                    type="number"
+                    min="30000"
+                    max="1800000"
+                    outlined
+                    :disable="!canEdit"
+                    hint="Maximum wait time per report"
+                  />
+                </div>
+              </div>
+              
+              <div class="text-caption text-grey-6 q-mt-sm">
+                <strong>Recommended for Cloudflare-protected instances:</strong> Chunk Size: 200, Throttle Delay: 5000ms<br/>
+                <strong>Recommended for large instances (1000+ vulns):</strong> Chunk Size: 300, Throttle Delay: 3000ms<br/>
+                <strong>High-performance setups:</strong> Chunk Size: 1000, Throttle Delay: 1000ms
+              </div>
+            </q-card-section>
           </q-card>
 
         <q-card class="q-my-lg" v-if="canEdit" align="center">

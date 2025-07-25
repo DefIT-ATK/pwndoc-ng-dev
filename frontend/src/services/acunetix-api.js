@@ -135,19 +135,14 @@ class AcunetixApiService {
    * Export vulnerabilities for a target group (full workflow)
    * @param {string} targetGroupId - Target group ID
    * @param {string} targetGroupName - Target group name
-   * @param {Function} progressCallback - Progress callback function
    * @returns {Promise<Object>} - Export report data
    */
-  async exportTargetGroup(targetGroupId, targetGroupName, progressCallback = null) {
+  async exportTargetGroup(targetGroupId, targetGroupName) {
     if (!this.sessionKey || !this.serverAddress) {
       throw new Error('Not authenticated')
     }
 
     try {
-      if (progressCallback) {
-        progressCallback('Starting export...', 0)
-      }
-
       const response = await axios.post('/api/acunetix/export-target-group', {
         serverAddress: this.serverAddress,
         sessionKey: this.sessionKey,
@@ -156,9 +151,6 @@ class AcunetixApiService {
       })
 
       if (response.data.success) {
-        if (progressCallback) {
-          progressCallback('Export completed', 100)
-        }
         return response.data
       }
       
@@ -254,6 +246,31 @@ class AcunetixApiService {
   }
 
   /**
+   * Get export progress for the current session
+   * @returns {Promise<Object|null>} - Progress data or null
+   */
+  async getExportProgress() {
+    if (!this.sessionKey) {
+      return null
+    }
+
+    try {
+      // URL encode the session key to handle special characters
+      const encodedSessionKey = encodeURIComponent(this.sessionKey)
+      const response = await axios.get(`/api/acunetix/export-progress/${encodedSessionKey}`)
+      
+      if (response.data.success) {
+        return response.data.progress
+      }
+      
+      return null
+    } catch (error) {
+      console.error('Failed to get export progress:', error)
+      return null
+    }
+  }
+
+  /**
    * Export vulnerabilities for a target group with progress tracking
    * @param {string} targetGroupId - Target group ID
    * @param {Function} progressCallback - Progress callback function
@@ -264,23 +281,54 @@ class AcunetixApiService {
       // Get target group name for display  
       const targetGroupName = targetGroupId // Use ID as fallback name
 
-      progressCallback('Starting export...')
+      progressCallback('Starting export...', 0)
+      console.log('Starting export for target group:', targetGroupId)
+      console.log('Session key for progress tracking:', this.sessionKey)
       
-      // Use the new exportTargetGroup method that implements the full Python workflow
-      const result = await this.exportTargetGroup(targetGroupId, targetGroupName, (message, progress) => {
-        if (progressCallback) {
-          progressCallback(message)
+      // Start the export process first
+      const exportPromise = this.exportTargetGroup(targetGroupId, targetGroupName)
+      
+      // Wait a moment for the backend to initialize progress tracking
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Start polling for progress updates
+      const progressInterval = setInterval(async () => {
+        try {
+          const progress = await this.getExportProgress()
+          console.log('Progress poll result:', progress)
+          if (progress) {
+            const percentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0
+            console.log(`Progress update: ${progress.message} (${percentage}%)`)
+            progressCallback(progress.message, percentage, progress)
+            
+            // Stop polling if completed or errored
+            if (progress.phase === 'completed' || progress.phase === 'error') {
+              console.log('Export completed or errored, stopping progress polling')
+              clearInterval(progressInterval)
+            }
+          } else {
+            console.log('No progress data available yet')
+          }
+        } catch (error) {
+          console.error('Error fetching progress:', error)
         }
-      })
+      }, 1000) // Poll every second
+      
+      // Wait for export to complete
+      const result = await exportPromise
+      
+      // Clear the interval in case it's still running
+      clearInterval(progressInterval)
       
       if (result.success) {
-        progressCallback(`Export completed: ${result.totalVulnerabilities} vulnerabilities processed`)
+        progressCallback(`Export completed: ${result.totalVulnerabilities} vulnerabilities processed`, 100)
         return result.reportData
       } else {
         throw new Error(result.message || 'Export failed')
       }
     } catch (error) {
-      progressCallback(`Export failed: ${error.message}`)
+      console.error('Export error:', error)
+      progressCallback(`Export failed: ${error.message}`, 0)
       throw error
     }
   }

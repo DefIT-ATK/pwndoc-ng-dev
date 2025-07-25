@@ -144,7 +144,13 @@ const SettingSchema = new Schema({
         acunetix: {
             serverAddress: { type: String, default: '' },
             email: { type: String, default: '' },
-            password: { type: String, default: '' } // Note: This should be encrypted in production
+            password: { type: String, default: '' }, // Note: This should be encrypted in production
+            throttling: {
+                chunkSize: { type: Number, default: 500, min: 50, max: 2000 }, // Vulnerabilities per batch
+                throttleDelay: { type: Number, default: 2000, min: 0, max: 30000 }, // Delay between batches (ms)
+                reportCheckInterval: { type: Number, default: 3000, min: 1000, max: 30000 }, // Report status check interval (ms)
+                maxReportWait: { type: Number, default: 120000, min: 30000, max: 1800000 } // Max wait per report (ms)
+            }
         }
     }
 }, {strict: true});

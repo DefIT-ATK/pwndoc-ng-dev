@@ -2,9 +2,31 @@ var express = require('express');
 var router = express.Router();
 var axios = require('axios');
 var https = require('https');
+var Settings = require('../models/settings');
 
 // Store authenticated sessions (in production, this should be in Redis or similar)
 const authenticatedSessions = new Map();
+
+// In-memory storage for export progress tracking
+const exportProgressStore = new Map();
+
+/**
+ * Update export progress for a session
+ */
+function updateExportProgress(sessionKey, progressData) {
+  console.log(`Updating progress for session ${sessionKey}:`, progressData);
+  exportProgressStore.set(sessionKey, {
+    ...progressData,
+    timestamp: Date.now()
+  });
+}
+
+/**
+ * Get export progress for a session
+ */
+function getExportProgress(sessionKey) {
+  return exportProgressStore.get(sessionKey) || null;
+}
 
 // Debug route to see what headers we receive
 router.get('/debug-headers', (req, res) => {
@@ -410,7 +432,7 @@ router.post('/download', async (req, res) => {
   }
 });
 
-// Export vulnerabilities for a target group (full workflow like Python script)
+// Export vulnerabilities for a target group (full workflow with throttling and progress)
 router.post('/export-target-group', async (req, res) => {
   try {
     const { serverAddress, sessionKey, targetGroupId, targetGroupName } = req.body;
@@ -433,10 +455,46 @@ router.post('/export-target-group', async (req, res) => {
 
     const client = session.client;
 
-    // Step 1: Get all vulnerability IDs
+    // Load throttling configuration from settings
+    let throttlingConfig;
+    try {
+      const settings = await Settings.getAll();
+      throttlingConfig = settings.toolIntegrations?.acunetix?.throttling || {};
+    } catch (error) {
+      console.error('Failed to load settings, using defaults:', error);
+      throttlingConfig = {};
+    }
+
+    // Configuration for throttling (from settings with fallback defaults)
+    const CHUNK_SIZE = throttlingConfig.chunkSize || 500; // Vulnerabilities per batch
+    const THROTTLE_DELAY = throttlingConfig.throttleDelay || 2000; // Delay between batches
+    const REPORT_CHECK_INTERVAL = throttlingConfig.reportCheckInterval || 3000; // Report status check interval
+    const MAX_REPORT_WAIT = throttlingConfig.maxReportWait || 120000; // Max wait per report
+
+    console.log(`Using throttling config: chunkSize=${CHUNK_SIZE}, throttleDelay=${THROTTLE_DELAY}ms, reportCheckInterval=${REPORT_CHECK_INTERVAL}ms, maxReportWait=${MAX_REPORT_WAIT}ms`);
+
+    // Initialize progress tracking
+    updateExportProgress(sessionKey, {
+      phase: 'starting',
+      current: 0,
+      total: 0,
+      message: 'Initializing export...',
+      batchInfo: null
+    });
+
+    // Step 1: Get all vulnerability IDs with progress tracking
     console.log(`Starting export for target group: ${targetGroupName || targetGroupId}`);
+    updateExportProgress(sessionKey, {
+      phase: 'fetching',
+      current: 0,
+      total: 0,
+      message: 'Fetching vulnerabilities...',
+      batchInfo: null
+    });
+
     const vulns = [];
     let nextCursor = null;
+    let pageCount = 0;
 
     while (true) {
       let url = `/api/v1/vulnerabilities?l=100&q=group_id:${targetGroupId};status:!ignored;status:!fixed;`;
@@ -444,7 +502,8 @@ router.post('/export-target-group', async (req, res) => {
         url += `&c=${nextCursor}`;
       }
 
-      console.log(`Fetching vulnerabilities from: ${url}`);
+      pageCount++;
+      console.log(`Fetching page ${pageCount} from: ${url}`);
       const response = await client.get(url);
       const data = response.data;
 
@@ -455,39 +514,101 @@ router.post('/export-target-group', async (req, res) => {
       const cursors = data.pagination?.cursors || [];
       if (cursors.length > 1) {
         nextCursor = cursors[1];
+        // Small delay between pages to be respectful
+        await new Promise(resolve => setTimeout(resolve, 500));
       } else {
         break;
       }
     }
 
     const vulnIds = vulns.map(vuln => vuln.vuln_id);
-    console.log(`Found ${vulnIds.length} total vulnerabilities`);
+    console.log(`Found ${vulnIds.length} total vulnerabilities across ${pageCount} pages`);
 
     if (vulnIds.length === 0) {
+      updateExportProgress(sessionKey, {
+        phase: 'completed',
+        current: 0,
+        total: 0,
+        message: 'No vulnerabilities found',
+        batchInfo: null
+      });
+
       return res.json({
         success: true,
         message: 'No vulnerabilities found for this target group',
-        reportData: null
+        reportData: null,
+        progress: { phase: 'completed', current: 0, total: 0, message: 'No vulnerabilities found' }
       });
     }
 
-    // Step 2: Split IDs into chunks of 500
-    const chunkSize = 500;
+    // Step 2: Split IDs into chunks
     const idChunks = [];
-    for (let i = 0; i < vulnIds.length; i += chunkSize) {
-      idChunks.push(vulnIds.slice(i, i + chunkSize));
+    for (let i = 0; i < vulnIds.length; i += CHUNK_SIZE) {
+      idChunks.push(vulnIds.slice(i, i + CHUNK_SIZE));
     }
 
-    console.log(`Splitting vulnerability list into ${idChunks.length} batches`);
+    console.log(`Splitting vulnerability list into ${idChunks.length} batches (${CHUNK_SIZE} per batch)`);
+    
+    updateExportProgress(sessionKey, {
+      phase: 'processing',
+      current: 0,
+      total: idChunks.length,
+      message: `Processing ${vulnIds.length} vulnerabilities in ${idChunks.length} batches`,
+      batchInfo: { totalVulns: vulnIds.length, batchSize: CHUNK_SIZE }
+    });
 
     let mergedReport = null;
 
-    // Step 3: Generate reports for each chunk and merge them
+    // Step 3: Generate reports for each chunk with throttling
     for (let i = 0; i < idChunks.length; i++) {
       const idChunk = idChunks[i];
       console.log(`Processing batch ${i + 1}/${idChunks.length} with ${idChunk.length} vulnerabilities`);
 
+      updateExportProgress(sessionKey, {
+        phase: 'processing',
+        current: i,
+        total: idChunks.length,
+        message: `Processing batch ${i + 1}/${idChunks.length} (${idChunk.length} vulnerabilities)`,
+        batchInfo: { 
+          totalVulns: vulnIds.length, 
+          batchSize: CHUNK_SIZE,
+          currentBatch: i + 1,
+          batchVulns: idChunk.length
+        }
+      });
+
+      // Throttle requests (except for the first batch)
+      if (i > 0) {
+        console.log(`Throttling: waiting ${THROTTLE_DELAY}ms before next batch...`);
+        updateExportProgress(sessionKey, {
+          phase: 'throttling',
+          current: i,
+          total: idChunks.length,
+          message: `Waiting ${THROTTLE_DELAY / 1000}s before processing batch ${i + 1}/${idChunks.length}`,
+          batchInfo: { 
+            totalVulns: vulnIds.length, 
+            batchSize: CHUNK_SIZE,
+            currentBatch: i + 1,
+            batchVulns: idChunk.length
+          }
+        });
+        await new Promise(resolve => setTimeout(resolve, THROTTLE_DELAY));
+      }
+
       // Generate report for this chunk
+      updateExportProgress(sessionKey, {
+        phase: 'generating_report',
+        current: i,
+        total: idChunks.length,
+        message: `Generating report for batch ${i + 1}/${idChunks.length}`,
+        batchInfo: { 
+          totalVulns: vulnIds.length, 
+          batchSize: CHUNK_SIZE,
+          currentBatch: i + 1,
+          batchVulns: idChunk.length
+        }
+      });
+
       const exportData = {
         export_id: "21111111-1111-1111-1111-111111111130",
         source: {
@@ -500,32 +621,59 @@ router.post('/export-target-group', async (req, res) => {
       const reportId = exportResponse.data.report_id;
       console.log(`Generated report ID: ${reportId}`);
 
-      // Wait for the report to be ready
+      // Wait for the report to be ready with configurable timing
+      updateExportProgress(sessionKey, {
+        phase: 'waiting_report',
+        current: i,
+        total: idChunks.length,
+        message: `Waiting for report generation (batch ${i + 1}/${idChunks.length})`,
+        batchInfo: { 
+          totalVulns: vulnIds.length, 
+          batchSize: CHUNK_SIZE,
+          currentBatch: i + 1,
+          batchVulns: idChunk.length,
+          reportId
+        }
+      });
+
       let downloadLink = null;
       let attempts = 0;
-      const maxAttempts = 60; // 5 minutes max (5 seconds * 60)
+      const maxAttempts = Math.ceil(MAX_REPORT_WAIT / REPORT_CHECK_INTERVAL);
 
       while (!downloadLink && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+        await new Promise(resolve => setTimeout(resolve, REPORT_CHECK_INTERVAL));
         attempts++;
 
-        console.log(`Checking report status, attempt ${attempts}/${maxAttempts}`);
+        console.log(`Checking report status for batch ${i + 1}, attempt ${attempts}/${maxAttempts}`);
         const statusResponse = await client.get(`/api/v1/exports/${reportId}`);
         const downloadLinks = statusResponse.data.download || [];
         
         if (downloadLinks.length > 0 && downloadLinks[0] !== null) {
           downloadLink = downloadLinks[0];
-          console.log(`Report ready, download link: ${downloadLink}`);
+          console.log(`Report ready for batch ${i + 1}, download link: ${downloadLink}`);
           break;
         }
       }
 
       if (!downloadLink) {
-        throw new Error(`Report generation timed out for batch ${i + 1}`);
+        throw new Error(`Report generation timed out for batch ${i + 1} after ${Math.round(MAX_REPORT_WAIT / 1000)} seconds`);
       }
 
       // Download the report JSON
-      console.log(`Downloading report data for batch ${i + 1}`);
+      updateExportProgress(sessionKey, {
+        phase: 'downloading',
+        current: i,
+        total: idChunks.length,
+        message: `Downloading report data (batch ${i + 1}/${idChunks.length})`,
+        batchInfo: { 
+          totalVulns: vulnIds.length, 
+          batchSize: CHUNK_SIZE,
+          currentBatch: i + 1,
+          batchVulns: idChunk.length
+        }
+      });
+
+      console.log(`Downloading report data for batch ${i + 1}/${idChunks.length}`);
       const reportResponse = await client.get(downloadLink);
       const reportJson = reportResponse.data;
 
@@ -533,31 +681,139 @@ router.post('/export-target-group', async (req, res) => {
       if (i === 0) {
         // First chunk - initialize merged report
         mergedReport = reportJson;
-        console.log(`Batch 1/${idChunks.length} completed`);
+        console.log(`Batch 1/${idChunks.length} completed - ${idChunk.length} vulnerabilities processed`);
       } else {
         // Subsequent chunks - append scans to merged report
         if (mergedReport.export && mergedReport.export.scans && reportJson.export && reportJson.export.scans) {
           mergedReport.export.scans.push(...reportJson.export.scans);
         }
-        console.log(`Batch ${i + 1}/${idChunks.length} completed`);
+        console.log(`Batch ${i + 1}/${idChunks.length} completed - ${idChunk.length} vulnerabilities processed`);
       }
+
+      updateExportProgress(sessionKey, {
+        phase: 'processing',
+        current: i + 1,
+        total: idChunks.length,
+        message: `Completed batch ${i + 1}/${idChunks.length} (${idChunk.length} vulnerabilities)`,
+        batchInfo: { 
+          totalVulns: vulnIds.length, 
+          batchSize: CHUNK_SIZE,
+          currentBatch: i + 1,
+          batchVulns: idChunk.length
+        }
+      });
     }
 
-    console.log('Export completed successfully');
+    console.log(`Export completed successfully: ${vulnIds.length} vulnerabilities processed in ${idChunks.length} batches`);
+    
+    updateExportProgress(sessionKey, {
+      phase: 'completed',
+      current: idChunks.length,
+      total: idChunks.length,
+      message: `Export completed: ${vulnIds.length} vulnerabilities processed`,
+      batchInfo: { 
+        totalVulns: vulnIds.length, 
+        batchSize: CHUNK_SIZE,
+        totalBatches: idChunks.length
+      }
+    });
     
     res.json({
       success: true,
       message: `Successfully exported ${vulnIds.length} vulnerabilities from ${targetGroupName || targetGroupId}`,
       reportData: mergedReport,
       totalVulnerabilities: vulnIds.length,
-      batches: idChunks.length
+      batches: idChunks.length,
+      progress: { 
+        phase: 'completed', 
+        current: idChunks.length, 
+        total: idChunks.length, 
+        message: `Export completed: ${vulnIds.length} vulnerabilities processed` 
+      }
     });
     
   } catch (error) {
     console.error('Failed to export target group:', error.response?.data || error.message);
+    
+    // Update progress to show error state
+    updateExportProgress(sessionKey, {
+      phase: 'error',
+      current: 0,
+      total: 0,
+      message: `Export failed: ${error.message}`,
+      error: error.message
+    });
+    
     res.status(500).json({
       success: false,
       message: error.response?.data?.message || error.message || 'Failed to export target group'
+    });
+  }
+});
+
+// Get export configuration settings
+router.get('/export-config', async (req, res) => {
+  try {
+    const settings = await Settings.getAll();
+    const throttlingConfig = settings.toolIntegrations?.acunetix?.throttling || {};
+    
+    res.json({
+      success: true,
+      config: {
+        chunkSize: throttlingConfig.chunkSize || 500,
+        throttleDelay: throttlingConfig.throttleDelay || 2000,
+        reportCheckInterval: throttlingConfig.reportCheckInterval || 3000,
+        maxReportWait: throttlingConfig.maxReportWait || 120000
+      }
+    });
+  } catch (error) {
+    console.error('Failed to get export config:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get export configuration'
+    });
+  }
+});
+
+// Get export progress
+router.get('/export-progress/:sessionKey', (req, res) => {
+  try {
+    const { sessionKey } = req.params;
+    
+    // URL decode the session key to handle special characters
+    const decodedSessionKey = decodeURIComponent(sessionKey);
+    console.log('Progress request for session:', decodedSessionKey);
+    
+    if (!decodedSessionKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'Session key required'
+      });
+    }
+
+    const progress = getExportProgress(decodedSessionKey);
+    console.log('Progress data found:', progress);
+    
+    if (!progress) {
+      console.log('No progress data available for session:', decodedSessionKey);
+      return res.json({
+        success: true,
+        progress: null,
+        message: 'No export in progress'
+      });
+    }
+
+    console.log('Returning progress:', progress);
+    res.json({
+      success: true,
+      progress
+    });
+    
+  } catch (error) {
+    console.error('Failed to get export progress:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get export progress'
     });
   }
 });

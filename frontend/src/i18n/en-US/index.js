@@ -622,6 +622,8 @@ export default {
             exporting: 'Exporting vulnerabilities...',
             exportCompleted: 'Export completed successfully',
             exportFailed: 'Export failed',
+            exportProgress: 'Export Progress',
+            exportProgressDetails: 'Processing vulnerabilities in batches to avoid rate limiting...',
             noTargetGroupSelected: 'Please select a target group',
             targetGroupInfo: 'Target Group Information'
         },

@@ -26,6 +26,8 @@ export function useAcunetixApi() {
   // Export state
   const exporting = ref(false)
   const exportProgress = ref(0)
+  const exportProgressMessage = ref('')
+  const exportProgressDetails = ref(null)
   const exportedData = ref(null)
   const parsing = ref(false)
 
@@ -148,6 +150,8 @@ export function useAcunetixApi() {
     parsing.value = false
     exporting.value = false
     exportProgress.value = 0
+    exportProgressMessage.value = ''
+    exportProgressDetails.value = null
     
     Notify.create({
       message: 'Disconnected from Acunetix',
@@ -219,9 +223,19 @@ export function useAcunetixApi() {
       return null
     }
 
+    exporting.value = true
+    exportProgress.value = 0
+    exportProgressMessage.value = 'Starting export...'
+    exportProgressDetails.value = null
+
     try {
       const reportData = await AcunetixApiService.exportVulnerabilities(
-        targetGroupId
+        targetGroupId,
+        (message, percentage, details) => {
+          exportProgressMessage.value = message
+          exportProgress.value = percentage || 0
+          exportProgressDetails.value = details
+        }
       )
       
       exportedData.value = reportData
@@ -236,6 +250,8 @@ export function useAcunetixApi() {
       })
       
       throw error
+    } finally {
+      exporting.value = false
     }
   }
 
@@ -260,6 +276,8 @@ export function useAcunetixApi() {
     // Export state
     exporting,
     exportProgress,
+    exportProgressMessage,
+    exportProgressDetails,
     exportedData,
     parsing,
     

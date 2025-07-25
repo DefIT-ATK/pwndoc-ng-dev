@@ -246,13 +246,51 @@
               </div>
 
               <!-- Export Progress -->
-              <div v-if="exporting || exportProgress">
-                <q-linear-progress 
-                  :indeterminate="exporting"
-                  color="primary"
-                  class="q-mb-sm"
-                />
-                <div class="text-body2 text-grey-6">{{ exportProgress }}</div>
+              <div v-if="exporting || exportProgress > 0" class="q-mt-md">
+                <q-card flat bordered>
+                  <q-card-section>
+                    <div class="row items-center q-mb-sm">
+                      <div class="col">
+                        <div class="text-subtitle2">Export Progress</div>
+                      </div>
+                      <div class="col-auto">
+                        <q-chip 
+                          v-if="exportProgressDetails"
+                          :color="exportProgressDetails.phase === 'completed' ? 'positive' : exportProgressDetails.phase === 'error' ? 'negative' : 'primary'"
+                          text-color="white"
+                          size="sm"
+                        >
+                          {{ exportProgressDetails.phase.replace('_', ' ').toUpperCase() }}
+                        </q-chip>
+                      </div>
+                    </div>
+                    
+                    <q-linear-progress 
+                      :value="exportProgress / 100"
+                      :indeterminate="exportProgress === 0 && exporting"
+                      color="primary"
+                      class="q-mb-sm"
+                      size="8px"
+                    />
+                    
+                    <div class="text-body2 text-primary">
+                      {{ exportProgressMessage || 'Processing...' }}
+                    </div>
+                    
+                    <div v-if="exportProgressDetails && exportProgressDetails.batchInfo" class="text-caption text-grey-6 q-mt-xs">
+                      <div v-if="exportProgressDetails.batchInfo.totalVulns">
+                        Total vulnerabilities: {{ exportProgressDetails.batchInfo.totalVulns }}
+                      </div>
+                      <div v-if="exportProgressDetails.batchInfo.totalBatches">
+                        Batches: {{ exportProgressDetails.batchInfo.totalBatches }} ({{ exportProgress }}% complete)
+                      </div>
+                      <div v-if="exportProgressDetails.batchInfo.currentBatch">
+                        Current batch: {{ exportProgressDetails.batchInfo.currentBatch }}/{{ exportProgressDetails.total }} 
+                        ({{ exportProgressDetails.batchInfo.batchVulns }} vulnerabilities)
+                      </div>
+                    </div>
+                  </q-card-section>
+                </q-card>
               </div>
             </div>
           </q-card-section>

@@ -81,7 +81,23 @@ export default {
                     this.settings.toolIntegrations.acunetix = {
                         serverAddress: '',
                         email: '',
-                        password: ''
+                        password: '',
+                        throttling: {
+                            chunkSize: 500,
+                            throttleDelay: 2000,
+                            reportCheckInterval: 3000,
+                            maxReportWait: 120000
+                        }
+                    };
+                }
+                
+                // Ensure throttling settings exist with defaults
+                if (!this.settings.toolIntegrations.acunetix.throttling) {
+                    this.settings.toolIntegrations.acunetix.throttling = {
+                        chunkSize: 500,
+                        throttleDelay: 2000,
+                        reportCheckInterval: 3000,
+                        maxReportWait: 120000
                     };
                 }
                   
