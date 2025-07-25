@@ -65,6 +65,9 @@ export default class PurpleKnightParser extends BaseParser {
     const worksheet = workbook.Sheets[sheetName]
     const data = this._worksheetToJson(worksheet)
     
+    console.log('Assessment summary sheet columns:', data.length > 0 ? Object.keys(data[0]) : 'No data')
+    console.log('Assessment summary sample data:', data.slice(0, 3))
+    
     return data
   }
 
@@ -72,12 +75,49 @@ export default class PurpleKnightParser extends BaseParser {
    * Extract forest/domain name from assessment summary
    */
   _extractForestName(assessmentData) {
-    // Look for row containing "tenant" in description
-    const tenantRow = assessmentData.find(row => 
-      row.Description && row.Description.toString().includes(': tenant')
-    )
+    console.log('Assessment summary data for forest extraction:', assessmentData.slice(0, 5))
     
-    return tenantRow ? tenantRow.Value || 'Unknown Domain' : 'Unknown Domain'
+    // Look for row containing "AD: forest name" in the first column
+    const forestRow = assessmentData.find(row => {
+      // Get the first column value (could be 'Tool version' or similar)
+      const firstColumnKey = Object.keys(row).find(key => !key.startsWith('__'))
+      if (firstColumnKey && row[firstColumnKey]) {
+        return row[firstColumnKey].toString().toLowerCase().includes('ad: forest name')
+      }
+      return false
+    })
+    
+    if (forestRow) {
+      console.log('Found forest name row:', forestRow)
+      
+      // Get the value from the second column (version number column)
+      const columns = Object.keys(forestRow).filter(key => !key.startsWith('__'))
+      if (columns.length >= 2) {
+        const forestName = forestRow[columns[1]]
+        console.log('Extracted forest name:', forestName)
+        return forestName || 'Unknown Domain'
+      }
+    }
+    
+    // Fallback: also try looking for ": tenant" pattern as in original Python code
+    const tenantRow = assessmentData.find(row => {
+      return Object.values(row).some(value => 
+        value && value.toString().toLowerCase().includes(': tenant')
+      )
+    })
+    
+    if (tenantRow) {
+      console.log('Found tenant row:', tenantRow)
+      const columns = Object.keys(tenantRow).filter(key => !key.startsWith('__'))
+      if (columns.length >= 2) {
+        const forestName = tenantRow[columns[1]]
+        console.log('Extracted forest name from tenant row:', forestName)
+        return forestName || 'Unknown Domain'
+      }
+    }
+    
+    console.log('No forest name found, returning Unknown Domain')
+    return 'Unknown Domain'
   }
 
   /**
