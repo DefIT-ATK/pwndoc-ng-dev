@@ -403,10 +403,26 @@ export function usePurpleKnightParser(settings = null) {
 
   const handleFileRemove = (index) => {
     const result = removeFile(index)
-    if (result.removedFileProcessed) {
+    
+    // Clean up file-specific data
+    if (fileFindingsMap.value[result.removedFile.name]) {
+      delete fileFindingsMap.value[result.removedFile.name]
+    }
+    
+    // Clear everything if no files left
+    if (result.remainingCount === 0) {
+      parsedVulnerabilities.value = []
+      selectedVulnerabilities.value = []
+      debugInfo.value = []
+      totalVulnerabilities.value = 0
+      totalOriginalFindings.value = 0
+      fileFindingsMap.value = {}
+    } else if (result.removedFileProcessed) {
       // File was processed, reparse remaining files
       parseAllFiles()
     }
+    
+    console.log(`Removed PurpleKnight file ${result.removedFile.name}, remaining files: ${result.remainingCount}`)
   }
 
   return {
