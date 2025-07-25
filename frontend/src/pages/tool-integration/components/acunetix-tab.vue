@@ -46,7 +46,7 @@
               :audits="audits"
               :selected-audit="selectedAudit"
               :loading="loadingAudits"
-              @update:selected-audit="selectedAuditFile = $event"
+              @update:selected-audit="selectedAudit = $event"
             />
             
             <!-- Preview Section -->
@@ -55,7 +55,7 @@
               :vulnerabilities="parsedVulnerabilities"
               :selected="selectedVulnerabilities"
               :audits="audits"
-              :selected-audit="selectedAuditFile"
+              :selected-audit="selectedAudit"
               :importing="importing"
               :total-vulnerabilities="totalOriginalFindings"
               :import-button-label="$t('toolIntegration.acunetix.import')"
@@ -341,9 +341,6 @@ export default defineComponent({
     // API Integration (new functionality)
     const apiIntegration = useAcunetixApi()
     
-    // Separate audit selections for each method
-    const selectedAuditFile = ref(null)
-    
     // API-specific state (simplified)
     const selectedTargetGroups = ref([])
 
@@ -482,7 +479,6 @@ export default defineComponent({
       
       // File parser (existing)
       ...fileParser,
-      selectedAuditFile,
       
       // API integration (simplified)
       ...apiIntegration,

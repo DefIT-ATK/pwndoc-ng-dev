@@ -4,7 +4,6 @@ import { $t } from '@/boot/i18n'
 import AcunetixApiService from '@/services/acunetix-api'
 import SettingsService from '@/services/settings'
 import AcunetixParser from '@/services/parsers/acunetix-parser'
-import { useVulnerabilityImport } from './useVulnerabilityImport'
 
 /**
  * Composable for Acunetix API integration
@@ -30,15 +29,6 @@ export function useAcunetixApi() {
   const exportProgressDetails = ref(null)
   const exportedData = ref(null)
   const parsing = ref(false)
-
-  // Import state
-  const {
-    importing,
-    selectedAudit,
-    confirmImport,
-    showImportSuccess,
-    showImportError
-  } = useVulnerabilityImport()
 
   /**
    * Load Acunetix settings from the server
@@ -280,11 +270,6 @@ export function useAcunetixApi() {
     exportProgressDetails,
     exportedData,
     parsing,
-    
-    // Import state
-    importing,
-    selectedAudit,
-    confirmImport,
     
     // Functions
     loadSettings,
