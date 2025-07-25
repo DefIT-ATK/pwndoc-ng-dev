@@ -351,8 +351,8 @@ export default class PurpleKnightParser extends BaseParser {
     // Get all column names
     const allColumns = Object.keys(data[0])
     
-    // Filter out exclusions (following your Python code)
-    const exclusions = ['Ignored', 'EventTimestamp', 'ReplicationMetadata']
+    // Get exclusions from settings or use defaults
+    const exclusions = this._getColumnExclusions()
     const columns = allColumns.filter(col => !exclusions.includes(col))
 
     let table = '<table><tbody>'
@@ -391,5 +391,27 @@ export default class PurpleKnightParser extends BaseParser {
     } else {
       return table
     }
+  }
+
+  /**
+   * Get column exclusions from settings or return defaults
+   */
+  _getColumnExclusions() {
+    try {
+      // Try to get settings from global store or localStorage
+      const settingsStr = localStorage.getItem('pwndoc-settings')
+      if (settingsStr) {
+        const settings = JSON.parse(settingsStr)
+        const exclusions = settings.toolIntegrations?.purpleknight?.exclusions
+        if (exclusions && Array.isArray(exclusions)) {
+          return exclusions
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load PurpleKnight exclusions from settings:', error)
+    }
+    
+    // Return default exclusions if settings not available
+    return ['Ignored', 'EventTimestamp', 'ReplicationMetadata']
   }
 }

@@ -380,6 +380,21 @@
             <q-separator />
             
             <q-card-section>
+              <div class="text-bold">PurpleKnight Column Exclusions</div>
+              <div class="text-grey-8 q-mb-sm">
+                Configure which columns to exclude when parsing PurpleKnight result sheets into HTML tables.
+              </div>
+              <q-btn
+                color="primary"
+                label="Edit Column Exclusions"
+                @click="openPurpleknightDialog"
+                class="q-mb-md"
+              />
+            </q-card-section>
+            
+            <q-separator />
+            
+            <q-card-section>
               <div class="text-bold">Acunetix API Integration</div>
               <div class="text-grey-8 q-mb-md">
                 Configure connection settings for direct Acunetix API integration. This allows importing vulnerabilities directly from Acunetix target groups without manual export.
@@ -645,6 +660,61 @@
     <q-card-actions align="right">
       <q-btn flat label="Cancel" color="primary" v-close-popup />
       <q-btn flat label="Save" color="primary" @click="savePingcastleDialog" :disable="pingcastleMapJsonError" />
+    </q-card-actions>
+  </q-card>
+</q-dialog>
+
+<!-- PurpleKnight Column Exclusions Dialog -->
+<q-dialog v-model="purpleknightDialog" persistent>
+  <q-card style="width: 600px; max-width: 80vw;">
+    <q-card-section>
+      <div class="text-h6">Edit PurpleKnight Column Exclusions</div>
+      <div class="text-body2 text-grey-7 q-mt-sm">
+        These columns will be excluded when parsing PurpleKnight result sheets into HTML tables for the Proof of Concept section.
+      </div>
+    </q-card-section>
+    
+    <q-separator />
+    
+    <q-card-section style="max-height: 400px" class="scroll">
+      <div class="q-gutter-sm">
+        <div 
+          v-for="(exclusion, index) in purpleknightExclusions" 
+          :key="index"
+          class="row items-center q-gutter-sm"
+        >
+          <q-input
+            v-model="purpleknightExclusions[index]"
+            label="Column Name"
+            outlined
+            dense
+            class="col"
+          />
+          <q-btn 
+            icon="delete" 
+            color="negative" 
+            dense 
+            flat 
+            @click="removePurpleknightExclusion(index)" 
+          />
+        </div>
+        
+        <q-btn
+          icon="add"
+          label="Add Exclusion"
+          color="primary"
+          outline
+          @click="addPurpleknightExclusion"
+          class="q-mt-md"
+        />
+      </div>
+    </q-card-section>
+    
+    <q-separator />
+    
+    <q-card-actions align="right">
+      <q-btn flat label="Cancel" color="primary" v-close-popup />
+      <q-btn flat label="Save" color="primary" @click="savePurpleknightDialog" />
     </q-card-actions>
   </q-card>
 </q-dialog>

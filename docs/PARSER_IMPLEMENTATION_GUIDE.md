@@ -68,6 +68,8 @@ import BaseParser from '../base-parser'
 export class ExampleToolParser extends BaseParser {
   constructor(auditId, filenames, merge = true, dryRun = false) {
     super(auditId, filenames, merge, dryRun)
+    this.name = 'ExampleTool'
+    this.supportedExtensions = ['.xml', '.json'] // Define supported file extensions
   }
 
   // Required: Extract vulnerabilities from files
@@ -88,6 +90,19 @@ export class ExampleToolParser extends BaseParser {
 
 export default ExampleToolParser
 ```
+
+### Critical Constructor Pattern
+
+**IMPORTANT**: All parsers MUST follow the exact constructor signature:
+
+```javascript
+constructor(auditId, filenames, merge = true, dryRun = false) {
+  super(auditId, filenames, merge, dryRun)
+  // ... rest of constructor
+}
+```
+
+This ensures compatibility with the base parser's import flow and prevents runtime errors during import operations.
 
 ### Step 2: Create Composable
 
@@ -145,6 +160,47 @@ export function useExampleToolParser() {
   async function parseAllFiles() {
     // Follow Nessus/Acunetix pattern exactly
     // See reference implementations for complete logic
+  }
+  
+  // Import function - CRITICAL PATTERN
+  async function importSelected() {
+    if (!selectedAudit.value) {
+      Notify.create({
+        type: 'negative',
+        message: $t('toolIntegration.messages.selectAudit')
+      })
+      return
+    }
+
+    try {
+      importing.value = true
+      
+      // CRITICAL: Pass audit ID to parser constructor
+      const parser = new ExampleToolParser(selectedAudit.value, [], true, false)
+      
+      // Extract selected findings for import
+      const selectedFindings = extractOriginalFindings(selectedVulnerabilities.value)
+      
+      // Import using base parser method
+      const result = await parser.importSelectedFindings(selectedFindings)
+      
+      if (result.success) {
+        // CRITICAL: Use result.findingsCount, NOT result.summary.imported
+        showImportSuccess('exampletool', result.findingsCount)
+        
+        // Clear selections after successful import
+        selectedVulnerabilities.value = []
+        
+        console.log('ExampleTool import completed successfully')
+      } else {
+        throw new Error(result.error || 'Import failed')
+      }
+    } catch (error) {
+      console.error('ExampleTool import error:', error)
+      showImportError(error.message)
+    } finally {
+      importing.value = false
+    }
   }
   
   // File handling
@@ -813,10 +869,57 @@ toolIntegration: {
 - **Command**: `npm install --save {dependency}` in the frontend directory
 - **Verification**: Ensure dependency appears in `package.json`
 
+### Excel/Complex File Parsing
+- **Excel Files**: Use `xlsx` (SheetJS) library for Excel file parsing
+- **Table Generation**: When parsing result sheets, convert to HTML tables for PoC sections
+- **Sheet Navigation**: Access specific sheets by name, handle missing sheets gracefully
+- **Data Extraction**: Filter and transform data before creating findings
+- **Example Pattern**:
+  ```javascript
+  // Parse Excel workbook
+  const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+  const worksheet = workbook.Sheets[sheetName]
+  const data = XLSX.utils.sheet_to_json(worksheet)
+  
+  // Convert to HTML table for PoC
+  const resultTable = this._parseResultSheetToTable(workbook, row.ShortName)
+  poc += resultTable
+  ```
+
+### Base Parser Integration
+- **Constructor**: Always pass audit ID to parser constructor for proper database integration
+- **Import Results**: Base parser returns `{success: boolean, findingsCount: number}`, NOT `{success, summary: {imported}}`
+- **originalFinding Storage**: Store the processed finding object as `originalFinding`, not raw parsed data
+- **Database Lookup**: Use `_getVulnFromPwndocDBByTitle` pattern for vulnerability matching
+
+### Common Pitfalls and Solutions
+
+#### Constructor Mismatch
+**Problem**: Parser constructor doesn't accept audit ID parameter
+**Solution**: Ensure constructor signature matches: `constructor(auditId, filenames, merge, dryRun)`
+
+#### Result Object Mismatch  
+**Problem**: Composable expects `result.summary.imported` but base parser returns `result.findingsCount`
+**Solution**: Use `result.findingsCount` for import success messages
+
+#### Database 422 Errors
+**Problem**: `originalFinding` contains raw data instead of processed finding
+**Solution**: Store the complete processed finding object as `originalFinding`
+
+#### Sheet Parsing Failures
+**Problem**: Excel sheet references fail or produce unusable PoC content
+**Solution**: Implement robust sheet parsing with fallback to sheet name references
+
 ## Conclusion
 
 This guide provides all necessary patterns and requirements for implementing new parsers in PwnDoc-ng. Always refer to existing implementations (Nessus, Acunetix, PingCastle, PurpleKnight) for concrete examples and follow the established architecture patterns for consistency and maintainability.
 
-**Recent Updates**: This guide has been updated with lessons learned from the PurpleKnight parser implementation, including common Vue.js template issues, props vs composables patterns, and CVSS severity standardization requirements.
+**Recent Updates**: This guide has been updated with lessons learned from the PurpleKnight parser implementation, including:
+- **Constructor Pattern**: Critical requirement for audit ID parameter in parser constructors
+- **Import Result Handling**: Correct usage of `result.findingsCount` vs `result.summary.imported`
+- **Excel Parsing**: Complete pattern for Excel file parsing with sheet-to-table conversion
+- **Database Integration**: Proper `originalFinding` storage and vulnerability matching patterns
+- **Common Pitfalls**: Solutions for constructor mismatches, result object handling, and 422 database errors
+- **Sheet Parsing**: Robust Excel sheet parsing with HTML table generation for complex PoC sections
 
 For questions or clarifications, consult the existing codebase or review the implementation patterns documented here.

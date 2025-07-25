@@ -23,6 +23,10 @@ export default {
         pingcastleMapJsonError: false,
         pingcastleMapJsonErrorMsg: '',
         
+        // PurpleKnight dialog state and data
+        purpleknightDialog: false,
+        purpleknightExclusions: [],
+        
         // Acunetix connection testing
         acunetixTesting: false,
         acunetixConnectionStatus: null,
@@ -108,6 +112,10 @@ export default {
                   key,
                   value
                 }));
+                
+                // Populate PurpleKnight exclusions array
+                this.purpleknightExclusions = this.settings.toolIntegrations?.purpleknight?.exclusions || ['Ignored', 'EventTimestamp', 'ReplicationMetadata'];
+                
                 this.loading = false
             })
             .catch((err) => {
@@ -126,6 +134,29 @@ export default {
         removePingcastleMapRow(index) {
             this.pingcastleMapArray.splice(index, 1);
         },
+        
+        // PurpleKnight exclusions methods
+        openPurpleknightDialog() {
+            this.purpleknightDialog = true;
+        },
+        addPurpleknightExclusion() {
+            this.purpleknightExclusions.push('');
+        },
+        removePurpleknightExclusion(index) {
+            this.purpleknightExclusions.splice(index, 1);
+        },
+        savePurpleknightDialog() {
+            // Remove empty exclusions
+            this.purpleknightExclusions = this.purpleknightExclusions.filter(exclusion => exclusion.trim() !== '');
+            
+            // Save to settings
+            this.settings.toolIntegrations = this.settings.toolIntegrations || {};
+            this.settings.toolIntegrations.purpleknight = this.settings.toolIntegrations.purpleknight || {};
+            this.settings.toolIntegrations.purpleknight.exclusions = this.purpleknightExclusions;
+            
+            this.purpleknightDialog = false;
+        },
+        
         syncPingcastleMapToSettings() {
             let mapObj;
             if (this.pingcastleTab === 'json') {
