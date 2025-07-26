@@ -27,41 +27,42 @@
 
             <q-separator />
 
-            <q-tab-panels v-model="selectedTool" animated>
-              <q-tab-panel name="nessus">
+            <!-- All tab components are always mounted, visibility controlled by CSS -->
+            <div class="tab-content">
+              <div :class="{ 'tab-panel': true, 'tab-panel--hidden': selectedTool !== 'nessus' }">
                 <NessusTab 
                   :audits="auditOptions"
                   :loading-audits="loadingAudits"
                 />
-              </q-tab-panel>
+              </div>
 
-              <q-tab-panel name="pingcastle">
+              <div :class="{ 'tab-panel': true, 'tab-panel--hidden': selectedTool !== 'pingcastle' }">
                 <PingCastleTab 
                   :audits="auditOptions"
                   :loading-audits="loadingAudits"
                 />
-              </q-tab-panel>
+              </div>
 
-              <q-tab-panel name="acunetix">
+              <div :class="{ 'tab-panel': true, 'tab-panel--hidden': selectedTool !== 'acunetix' }">
                 <AcunetixTab 
                   :audits="auditOptions"
                   :loading-audits="loadingAudits"
                 />
-              </q-tab-panel>
+              </div>
 
-              <q-tab-panel name="purpleknight">
+              <div :class="{ 'tab-panel': true, 'tab-panel--hidden': selectedTool !== 'purpleknight' }">
                 <PurpleKnightTab 
                   :audits="auditOptions"
                   :loading-audits="loadingAudits"
                 />
-              </q-tab-panel>
+              </div>
 
-              <q-tab-panel name="custom">
+              <div :class="{ 'tab-panel': true, 'tab-panel--hidden': selectedTool !== 'custom' }">
                 <CustomTab 
                   :audits="auditOptions"
                 />
-              </q-tab-panel>
-            </q-tab-panels>
+              </div>
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -143,5 +144,19 @@ export default defineComponent({
 <style scoped>
 .q-page {
   background-color: #f5f5f5;
+}
+
+.tab-content {
+  position: relative;
+}
+
+.tab-panel {
+  /* Make tab panels behave like q-tab-panel */
+  padding: 16px;
+}
+
+.tab-panel--hidden {
+  /* Hide inactive tabs but keep them in DOM */
+  display: none;
 }
 </style>

@@ -27,6 +27,7 @@ The PwnDoc-ng parser system follows a modular architecture with the following ke
 - **Multi-file Support**: Individual file parsing with cross-file merging capabilities
 - **Duplicate Prevention**: Automatic prevention of importing the same file multiple times
 - **File Persistence**: Files remain after import to enable re-importing to different audits
+- **Tab State Persistence**: All parser states (files, parsed data, selections) persist when switching between tool tabs within the same session
 
 ## Architecture Components
 
@@ -444,6 +445,42 @@ components: {
   // ... other components
 }
 ```
+
+## State Persistence and User Experience
+
+### Tab Navigation Behavior
+
+**State Preservation**: All parser components remain mounted and preserve their complete state when switching between tool tabs. This includes:
+
+- ✅ **Uploaded files**: Files remain selected and ready for parsing
+- ✅ **Parsed vulnerabilities**: Results from previous parsing operations persist
+- ✅ **Selections**: User's vulnerability selections remain intact
+- ✅ **Debug information**: Parsing logs and debug data preserved
+- ✅ **UI state**: Audit selections, filter settings, etc.
+
+**Benefits**:
+- **Better UX**: Users can switch tabs without losing work
+- **Faster navigation**: Instant tab switching (no component re-mounting)
+- **Multi-tool workflows**: Compare results across different tools easily
+- **No re-work**: Upload files once, switch tabs as needed
+
+**State Clearing**:
+- **Browser refresh**: Clears all state (expected behavior)
+- **Page navigation**: Away from tool integration page clears state
+- **Manual clear**: Individual "remove file" buttons or clear functions
+
+### Implementation Details
+
+The main tool integration page (`tool-integration.vue`) keeps all tab components mounted simultaneously using CSS visibility control rather than conditional rendering:
+
+```vue
+<!-- All components always mounted, visibility controlled by CSS -->
+<div :class="{ 'tab-panel': true, 'tab-panel--hidden': selectedTool !== 'nessus' }">
+  <NessusTab :audits="auditOptions" :loading-audits="loadingAudits" />
+</div>
+```
+
+This ensures Vue doesn't destroy and recreate components during tab navigation, preserving all reactive state.
 
 ## Parser Class Requirements
 
