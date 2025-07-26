@@ -143,18 +143,29 @@ export class BaseParser {
       const vulnsToAdd = []
 
       for (const finding of findings) {
+        console.log('PROCESSING FINDING FOR IMPORT:', finding)
         const vulnFromDB = this._getVulnFromPwndocDBByTitle(finding.title, allPwndocDBVulns)
+        
+        let toAdd
         if (vulnFromDB) {
-          const toAdd = this._newFindingFromPwndocDB(vulnFromDB)
+          console.log(`Found in database: ${finding.title}`)
+          // Use database values as base
+          toAdd = this._newFindingFromPwndocDB(vulnFromDB)
           
           // Use database values for CVSS and priority (these are the correct ones)
-          // Use parsed finding values for POC, scope, and vulnType (these are specific to this instance)
+          // Use parsed finding values for POC, scope, vulnType, and observation (these are specific to this instance)
           toAdd.poc = finding.poc
           toAdd.scope = finding.scope
           toAdd.vulnType = finding.vulnType
-                    
-          vulnsToAdd.push(toAdd)
+          toAdd.observation = finding.observation  // CRITICAL: Use parsed observation, not DB observation
+        } else {
+          console.log(`NOT found in database: ${finding.title}`)
+          // Use finding values directly
+          toAdd = finding
         }
+        
+        console.log('FINAL FINDING TO ADD:', toAdd)
+        vulnsToAdd.push(toAdd)
       }
 
       let actualAddedCount = vulnsToAdd.length
@@ -163,7 +174,9 @@ export class BaseParser {
         console.log('Merge set to True: merging!')
         const merged = this._mergeVulns(vulnsToAdd)
         actualAddedCount = merged.length
+        console.log('MERGED FINDINGS FOR DATABASE:', merged)
         for (const toAdd of merged) {
+          console.log('SENDING TO DATABASE:', toAdd)
           await AuditService.createFinding(this.auditId, toAdd)
         }
       } else {
@@ -204,24 +217,28 @@ export class BaseParser {
   _findingToPwndocDB(finding) {
     console.log('_findingToPwndocDB input finding:', finding)
     
-    // Match the exact format used by the UI
+    // Backend expects a FLAT object, not nested details structure!
     const result = {
+      title: finding.title,
+      vulnType: finding.vulnType || "",
+      description: finding.description || "",
+      observation: finding.observation || "",
+      remediation: finding.remediation || "",
+      references: finding.references || [],
       cvssv3: finding.cvssv3 || "",
-      priority: finding.priority !== undefined ? finding.priority : "",
-      remediationComplexity: finding.remediationComplexity !== undefined ? finding.remediationComplexity : "",
-      category: finding.category || "",
-      details: [{
-        locale: "EN", // Match UI format (uppercase)
-        title: finding.title,
-        vulnType: finding.vulnType || "",
-        updatedAt: "", // Match UI format
-        description: finding.description || "",
-        observation: finding.observation || "",
-        remediation: finding.remediation || "",
-        references: finding.references || [],
-        customFields: [] // Match UI format
-      }]
+      poc: finding.poc || "",
+      scope: finding.scope || "",
+      category: finding.category || "", // Ensure category is never undefined
+      customFields: finding.customFields || []
     }
+    
+    // Extra safety check for undefined values
+    Object.keys(result).forEach(key => {
+      if (result[key] === undefined) {
+        console.warn(`Warning: ${key} is undefined, setting to empty string`)
+        result[key] = ""
+      }
+    })
     
     console.log('_findingToPwndocDB output:', result)
     return result
@@ -244,7 +261,6 @@ export class BaseParser {
       priority: vulnFromDB.priority,
       remediationComplexity: vulnFromDB.remediationComplexity,
       category: vulnFromDB.category,
-      status: 1, // En cours
       customFields: []
     }
   }
@@ -268,7 +284,13 @@ export class BaseParser {
     // Process each group of findings
     const result = []
     for (const [title, findings] of Object.entries(uniqueTitles)) {
+      console.log(`Processing group: "${title}" with ${findings.length} findings`)
+      console.log('Group findings categories:', findings.map(f => f.category))
+      
       const mergedFinding = this._mergeSingleVulnGroup(findings)
+      console.log('Merged finding result:', mergedFinding)
+      console.log('Merged finding type:', Array.isArray(mergedFinding) ? 'Array' : typeof mergedFinding)
+      
       result.push(mergedFinding)
     }
 
@@ -286,11 +308,18 @@ export class BaseParser {
       return this._mergeNessusVulnGroup(findings)
     }
     
+    // Check for PowerUpSQL-specific merge method
+    if (this._mergePowerUpSQLVulnGroup) {
+      return this._mergePowerUpSQLVulnGroup(findings)
+    }
+    
     // Get the category from the first finding
     const category = findings[0].category || 'default'
     
     // Delegate to category-specific merge method if it exists
-    const mergeMethod = this[`_merge${category.charAt(0).toUpperCase() + category.slice(1)}VulnGroup`]
+    const methodName = `_merge${category.charAt(0).toUpperCase() + category.slice(1)}VulnGroup`
+    const mergeMethod = this[methodName]
+    
     if (mergeMethod) {
       return mergeMethod.call(this, findings)
     }

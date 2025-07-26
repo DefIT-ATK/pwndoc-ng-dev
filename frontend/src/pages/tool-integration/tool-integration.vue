@@ -22,6 +22,7 @@
               <q-tab name="pingcastle" :label="$t('toolIntegration.tools.pingcastle')" />
               <q-tab name="acunetix" :label="$t('toolIntegration.tools.acunetix')" />
               <q-tab name="purpleknight" :label="$t('toolIntegration.tools.purpleknight')" />
+              <q-tab name="powerupsql" :label="$t('toolIntegration.tools.powerupsql')" />
               <q-tab name="custom" :label="$t('toolIntegration.tools.custom')" />
             </q-tabs>
 
@@ -57,6 +58,13 @@
                 />
               </div>
 
+              <div :class="{ 'tab-panel': true, 'tab-panel--hidden': selectedTool !== 'powerupsql' }">
+                <PowerUpSQLTab 
+                  :audits="auditOptions"
+                  :loading-audits="loadingAudits"
+                />
+              </div>
+
               <div :class="{ 'tab-panel': true, 'tab-panel--hidden': selectedTool !== 'custom' }">
                 <CustomTab 
                   :audits="auditOptions"
@@ -77,6 +85,7 @@ import NessusTab from './components/nessus-tab.vue'
 import PingCastleTab from './components/pingcastle-tab.vue'
 import AcunetixTab from './components/acunetix-tab.vue'
 import PurpleKnightTab from './components/purpleknight-tab.vue'
+import PowerUpSQLTab from './components/powerupsql-tab.vue'
 import CustomTab from './components/custom-tab.vue'
 import AuditService from '@/services/audit'
 
@@ -88,6 +97,7 @@ export default defineComponent({
     PingCastleTab,
     AcunetixTab,
     PurpleKnightTab,
+    PowerUpSQLTab,
     CustomTab
   },
 

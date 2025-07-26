@@ -505,9 +505,18 @@ const finding = {
   cvssScore: 7.5,
   priority: 1,
   remediationComplexity: 2,
-  category: 'Tool Name',
+  category: 'Tool Name', // CRITICAL: Always set this to prevent 422 errors
   severity: 'High'
 }
+```
+
+**CRITICAL REQUIREMENT**: Always set the `category` field in your parser's finding creation:
+- PowerUpSQL: `category: 'PowerUpSQL'`
+- Nessus: `category: 'Nessus'`
+- Acunetix: `category: 'Acunetix'`
+- PingCastle: `category: 'Active Directory'`
+
+Never leave `category` undefined as this causes 422 database errors.
 ```
 
 ### Tool-Specific Categories and Types
@@ -940,8 +949,23 @@ toolIntegration: {
 **Solution**: Use `result.findingsCount` for import success messages
 
 #### Database 422 Errors
-**Problem**: `originalFinding` contains raw data instead of processed finding
-**Solution**: Store the complete processed finding object as `originalFinding`
+**Problem**: Finding objects don't match the backend API format
+**Solution**: Backend expects a **flat object**, not nested `details` structure
+- Send `{title, description, observation, remediation, ...}` directly to API
+- Do NOT wrap in `details: [{...}]` array structure
+- Required fields: `title` (string), all others are optional
+- Backend API: `/api/audits/:auditId/findings` expects flat object format
+- **Critical**: Ensure `category` field is always set in parser (e.g., `category: 'PowerUpSQL'`)
+- **Never send undefined values**: Use `|| ""` fallbacks for all optional fields
+- **Merge method returns**: Custom merge methods MUST return single object, not array
+
+**Common Issues**:
+- ❌ `{details: [{title: "vuln", description: "..."}]}` (WRONG - nested structure)
+- ✅ `{title: "vuln", description: "...", category: "ToolName"}` (CORRECT - flat structure)
+- ❌ `{title: "vuln", category: undefined}` (WRONG - undefined values cause 422)
+- ✅ `{title: "vuln", category: "ToolName"}` (CORRECT - always set category)
+- ❌ `_mergeToolVulnGroup(findings) { return [mergedFinding] }` (WRONG - returns array)
+- ✅ `_mergeToolVulnGroup(findings) { return mergedFinding }` (CORRECT - returns object)
 
 #### Sheet Parsing Failures
 **Problem**: Excel sheet references fail or produce unusable PoC content

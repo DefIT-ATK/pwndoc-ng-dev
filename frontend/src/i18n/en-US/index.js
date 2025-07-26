@@ -558,6 +558,7 @@ export default {
             pingcastle: 'PingCastle',
             acunetix: 'Acunetix',
             purpleknight: 'PurpleKnight',
+            powerupsql: 'PowerUpSQL',
             custom: 'Custom Tool'
         },
         nessus: {
@@ -647,6 +648,22 @@ export default {
             forestName: 'Forest Name',
             indicatorsFound: 'Indicators Found',
             weightDistribution: 'Weight Distribution'
+        },
+        powerupsql: {
+            title: 'PowerUpSQL - PowerShell Toolkit for Attacking SQL Servers',
+            description: 'Import vulnerabilities from PowerUpSQL CSV export files',
+            selectFile: 'Select PowerUpSQL output file (.csv)',
+            dragDropTitle: 'Drop PowerUpSQL files here',
+            dragDropSubtitle: 'or click to browse files',
+            supportedFormats: 'Supported formats: .csv (excludes files with "1433" in filename)',
+            import: 'Import Selected Vulnerabilities',
+            parseSuccess: 'Successfully parsed {unique} unique vulnerabilities from {total} total findings',
+            parseError: 'Error parsing PowerUpSQL file',
+            parsingFiles: 'Parsing PowerUpSQL files...',
+            importSuccess: 'Successfully imported {count} vulnerabilities to {audit}',
+            importError: 'Error importing vulnerabilities',
+            noVulnerabilities: 'No vulnerabilities selected for import',
+            noFileSelected: 'No PowerUpSQL file selected'
         },
         custom: {
             title: 'Custom Tool',
