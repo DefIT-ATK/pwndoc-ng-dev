@@ -666,10 +666,32 @@ export default {
             noFileSelected: 'No PowerUpSQL file selected'
         },
         custom: {
-            title: 'Custom Tool',
-            description: 'Import from custom security tools or scripts',
-            selectFile: 'Select custom output file',
-            import: 'Import Data'
+            title: 'Custom Vulnerability Parsers',
+            description: 'Advanced parsing system for custom vulnerability analysis with dependency-based detection',
+            dragDropTitle: 'Drop analysis files here',
+            dragDropSubtitle: 'Upload files for custom vulnerability analysis',
+            supportedFormats: 'Supports: CSV, TXT, XML, JSON and other analysis files',
+            import: 'Import Custom Vulnerabilities',
+            analyzing: 'Analyzing files for custom parsers...',
+            parsingFiles: 'Executing custom parsers...',
+            noFileSelected: 'No files selected for analysis',
+            noVulnerabilities: 'No vulnerabilities found by custom parsers',
+            parseSuccess: 'Custom parsing completed: {count} vulnerabilities found',
+            parseError: 'Custom parsing failed',
+            importSuccess: 'Successfully imported {count} custom vulnerabilities',
+            importError: 'Error importing custom vulnerabilities',
+            analysis: {
+                title: 'Parser Analysis',
+                noParsers: 'No custom parsers available for the selected files',
+                foundParsers: 'Found {count} applicable parser(s)',
+                executeSelected: 'Execute Selected Parsers'
+            },
+            results: {
+                title: 'Parse Results',
+                summary: '{count} Vulnerabilities Found',
+                success: '{count} findings',
+                failed: 'Failed: {error}'
+            }
         },
         auditSelection: {
             title: 'Select Target Audit',

@@ -68,6 +68,8 @@
               <div :class="{ 'tab-panel': true, 'tab-panel--hidden': selectedTool !== 'custom' }">
                 <CustomTab 
                   :audits="auditOptions"
+                  :loading-audits="loadingAudits"
+                  :settings="settings"
                 />
               </div>
             </div>
@@ -141,11 +143,14 @@ export default defineComponent({
       await loadAudits()
     })
 
+    const settings = instance?.appContext.config.globalProperties.$settings
+
     return {
       selectedTool,
       auditOptions,
       loadingAudits,
-      loadAudits
+      loadAudits,
+      settings
     }
   }
 })

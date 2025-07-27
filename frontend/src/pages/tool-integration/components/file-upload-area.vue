@@ -28,7 +28,8 @@
       @change="onFileSelected"
     />
     
-    <!-- Selected files info -->
+    <!-- Selected files info - Hide this since parent shows files in grid -->
+    <!-- 
     <div v-if="files.length > 0" class="q-mt-md">
       <div class="text-subtitle2 q-mb-sm">Selected Files:</div>
       <div v-for="(file, index) in files" :key="index" class="q-mb-xs">
@@ -44,6 +45,7 @@
         </q-chip>
       </div>
     </div>
+    -->
   </div>
 </template>
 
@@ -57,7 +59,7 @@ export default defineComponent({
   props: {
     files: {
       type: Array,
-      required: true
+      default: () => []
     },
     acceptedFormats: {
       type: Array,
