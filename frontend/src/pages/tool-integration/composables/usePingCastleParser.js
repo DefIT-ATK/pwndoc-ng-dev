@@ -303,6 +303,16 @@ export function usePingCastleParser(settings = null) {
     }
   }
   
+  // Custom clearFiles that also clears parsed data
+  const clearAllFiles = () => {
+    clearFiles()
+    // Clear parsed data
+    parsedVulnerabilities.value = []
+    selectedVulnerabilities.value = []
+    totalVulnerabilities.value = 0
+    debugInfo.value = []
+  }
+  
   return {
     // State
     pingCastleFiles,
@@ -319,6 +329,7 @@ export function usePingCastleParser(settings = null) {
     parseAllFiles,
     handleFileChange,
     handleFileRemove,
+    clearFiles: clearAllFiles,
     importVulnerabilities
   }
 }

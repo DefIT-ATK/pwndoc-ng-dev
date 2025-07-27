@@ -474,6 +474,17 @@ export function useNessusParser() {
     }
   }
   
+  // Custom clearFiles that also clears parsed data
+  const clearAllFiles = () => {
+    clearFiles()
+    // Clear parsed data
+    parsedVulnerabilities.value = []
+    selectedVulnerabilities.value = []
+    totalVulnerabilities.value = 0
+    fileFindingsMap.value = {}
+    debugInfo.value = []
+  }
+  
   return {
     // State
     nessusFiles,
@@ -490,6 +501,7 @@ export function useNessusParser() {
     parseAllFiles,
     handleFileChange,
     handleFileRemove,
+    clearFiles: clearAllFiles,
     importVulnerabilities
   }
 }

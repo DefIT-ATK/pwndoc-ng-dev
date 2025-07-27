@@ -20,6 +20,14 @@
         />
       </div>
 
+      <!-- Selected Files Grid -->
+      <SelectedFilesGrid
+        :files="selectedFiles"
+        @clear-all="handleClearAll"
+        @remove-file="handleRemoveFile"
+        class="q-mb-md"
+      />
+
       <!-- Audit Selection -->
       <AuditSelection
         v-if="parsedVulnerabilities.length > 0"
@@ -65,6 +73,7 @@ import FileUploadArea from './file-upload-area.vue'
 import DebugInfoPanel from './debug-info-panel.vue'
 import VulnerabilityPreview from './vulnerability-preview.vue'
 import AuditSelection from './audit-selection.vue'
+import SelectedFilesGrid from './selected-files-grid.vue'
 import { usePingCastleParser } from '../composables/usePingCastleParser'
 
 export default defineComponent({
@@ -74,7 +83,8 @@ export default defineComponent({
     FileUploadArea,
     DebugInfoPanel,
     VulnerabilityPreview,
-    AuditSelection
+    AuditSelection,
+    SelectedFilesGrid
   },
 
   props: {
@@ -108,12 +118,28 @@ export default defineComponent({
       parseAllFiles,
       handleFileChange,
       handleFileRemove,
+      clearFiles,
       importVulnerabilities
     } = usePingCastleParser(settings)
+
+    // Methods for SelectedFilesGrid component
+    const handleClearAll = () => {
+      if (window.confirm('Are you sure you want to remove all files? This action cannot be undone.')) {
+        clearFiles()
+      }
+    }
+
+    const handleRemoveFile = (fileToRemove) => {
+      const index = pingCastleFiles.value.findIndex(f => f.name === fileToRemove.name)
+      if (index !== -1) {
+        handleFileRemove(index)
+      }
+    }
 
     return {
       $q,
       pingCastleFiles,
+      selectedFiles: pingCastleFiles, // Alias for SelectedFilesGrid
       parsedVulnerabilities,
       selectedVulnerabilities,
       debugInfo,
@@ -125,6 +151,8 @@ export default defineComponent({
       parseAllFiles,
       handleFileChange,
       handleFileRemove,
+      handleClearAll,
+      handleRemoveFile,
       importVulnerabilities
     }
   }

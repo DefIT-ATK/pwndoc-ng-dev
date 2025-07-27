@@ -40,6 +40,14 @@
               />
             </div>
 
+            <!-- Selected Files Grid -->
+            <SelectedFilesGrid
+              :files="selectedFiles"
+              @clear-all="handleClearAll"
+              @remove-file="handleRemoveFile"
+              class="q-mb-md"
+            />
+
             <!-- Audit Selection -->
             <AuditSelection
               v-if="parsedVulnerabilities.length > 0"
@@ -307,6 +315,7 @@ import FileUploadArea from './file-upload-area.vue'
 import AuditSelection from './audit-selection.vue'
 import VulnerabilityPreview from './vulnerability-preview.vue'
 import DebugInfoPanel from './debug-info-panel.vue'
+import SelectedFilesGrid from './selected-files-grid.vue'
 import { useAcunetixParser } from '../composables/useAcunetixParser'
 import { useAcunetixApi } from '../composables/useAcunetixApi'
 
@@ -317,7 +326,8 @@ export default defineComponent({
     FileUploadArea,
     AuditSelection,
     VulnerabilityPreview,
-    DebugInfoPanel
+    DebugInfoPanel,
+    SelectedFilesGrid
   },
 
   props: {
@@ -473,12 +483,29 @@ export default defineComponent({
     // Auto-connect on mount
     apiIntegration.connect()
 
+    // Methods for SelectedFilesGrid component
+    const handleClearAll = () => {
+      if (window.confirm('Are you sure you want to remove all files? This action cannot be undone.')) {
+        fileParser.clearFiles()
+      }
+    }
+
+    const handleRemoveFile = (fileToRemove) => {
+      const index = fileParser.acunetixFiles.value.findIndex(f => f.name === fileToRemove.name)
+      if (index !== -1) {
+        fileParser.handleFileRemove(index)
+      }
+    }
+
     return {
       // Tab state
       activeTab,
       
       // File parser (existing)
       ...fileParser,
+      selectedFiles: fileParser.acunetixFiles, // Alias for SelectedFilesGrid
+      handleClearAll,
+      handleRemoveFile,
       
       // API integration (simplified)
       ...apiIntegration,

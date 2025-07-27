@@ -369,6 +369,17 @@ export function usePowerUpSQLParser() {
     }
   }
   
+  // Custom clearFiles that also clears parsed data
+  const clearAllFiles = () => {
+    clearFiles()
+    // Clear parsed data
+    parsedVulnerabilities.value = []
+    selectedVulnerabilities.value = []
+    totalVulnerabilities.value = 0
+    fileFindingsMap.value = {}
+    debugInfo.value = []
+  }
+  
   return {
     // State
     powerUpSQLFiles,
@@ -385,6 +396,7 @@ export function usePowerUpSQLParser() {
     parseAllFiles,
     handleFileChange,
     handleFileRemove,
+    clearFiles: clearAllFiles,
     importVulnerabilities
   }
 }

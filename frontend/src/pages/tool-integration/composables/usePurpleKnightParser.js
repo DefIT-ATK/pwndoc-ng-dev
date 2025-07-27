@@ -424,7 +424,18 @@ export function usePurpleKnightParser(settings = null) {
     
     console.log(`Removed PurpleKnight file ${result.removedFile.name}, remaining files: ${result.remainingCount}`)
   }
-
+  
+  // Custom clearFiles that also clears parsed data
+  const clearAllFiles = () => {
+    clearFiles()
+    // Clear parsed data
+    parsedVulnerabilities.value = []
+    selectedVulnerabilities.value = []
+    totalVulnerabilities.value = 0
+    totalOriginalFindings.value = 0
+    debugInfo.value = []
+  }
+  
   return {
     // Files state
     files: purpleknightFiles,
@@ -445,7 +456,7 @@ export function usePurpleKnightParser(settings = null) {
     // Functions
     handleFileChange,
     handleFileRemove,
-    clearFiles,
+    clearFiles: clearAllFiles,
     parseAllFiles,
     importSelected
   }

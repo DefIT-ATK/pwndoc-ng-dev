@@ -484,6 +484,18 @@ export function useAcunetixParser() {
     }
   }
 
+  // Custom clearFiles that also clears parsed data
+  const clearAllFiles = () => {
+    clearFiles()
+    // Clear parsed data
+    parsedVulnerabilities.value = []
+    selectedVulnerabilities.value = []
+    totalVulnerabilities.value = 0
+    totalOriginalFindings.value = 0
+    fileFindingsMap.value = {}
+    debugInfo.value = []
+  }
+
   return {
     // State
     parsedVulnerabilities,
@@ -499,7 +511,7 @@ export function useAcunetixParser() {
     acunetixFiles,
     addFiles,
     removeFile,
-    clearFiles,
+    clearFiles: clearAllFiles,
     handleFileChange,
     handleFileRemove,
     
