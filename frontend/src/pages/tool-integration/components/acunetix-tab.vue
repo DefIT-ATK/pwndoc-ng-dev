@@ -309,7 +309,7 @@
 </template>
 
 <script>
-import { defineComponent, inject, onMounted, onUnmounted } from 'vue'
+import { defineComponent, inject, ref, onMounted, onUnmounted } from 'vue'
 import { Notify } from 'quasar'
 import FileUploadArea from './file-upload-area.vue'
 import AuditSelection from './audit-selection.vue'
