@@ -384,13 +384,13 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useCustomParsers } from '../composables/useCustomParsers'
 import { customVulnRegistry } from '@/services/custom-vulnerability-registry'
 import FileUploadArea from './file-upload-area.vue'
 import AuditSelection from './audit-selection.vue'
 import VulnerabilityPreview from './vulnerability-preview.vue'
-import { useParserDispatcher } from '../composables/useParserDispatcher'
+import { useStandardParserTab } from '../composables/useStandardParserTab'
 
 export default {
   name: 'CustomTab',
@@ -415,6 +415,9 @@ export default {
   },
   setup(props) {
     const customParsers = useCustomParsers(props.settings)
+    
+    // Standard parser tab interface
+    const standardInterface = useStandardParserTab('custom', customParsers)
     
     // File classification state
     const fileClassificationResult = ref(window.fileClassificationResult || {
@@ -451,9 +454,7 @@ export default {
     })
 
     // Get parser dispatcher for registration
-    const { registerParserInstance, unregisterParserInstance } = useParserDispatcher()
-
-    const handleFileChange = async (files) => {
+    const handleFileChangeCustom = async (files) => {
       customParsers.addFiles(files)
       // Get classification result from global storage (set by useCustomParsers)
       setTimeout(() => {
@@ -463,17 +464,8 @@ export default {
       }, 100)
     }
 
-    // Register this parser instance for file routing
-    onMounted(() => {
-      registerParserInstance('custom', {
-        handleFileChange  // Now using standard method name
-      })
-    })
-
-    // Unregister when component is unmounted
-    onUnmounted(() => {
-      unregisterParserInstance('custom')
-    })
+    // Override the standard handleFileChange with our custom logic
+    standardInterface.handleFileChange = handleFileChangeCustom
 
     const handleFileRemoved = (index) => {
       customParsers.removeFile(index)
@@ -579,11 +571,14 @@ export default {
     }
 
     return {
+      // Standard interface (includes file handling, registration, etc.)
+      ...standardInterface,
+      
+      // Parser-specific state and methods (explicit to ensure availability)
       ...customParsers,
-      handleFileChange,
-      handleFileRemoved,
-      handleClearAll,
-      handleRemoveFile,
+      selectedFiles: customParsers.selectedFiles, // Alias for SelectedFilesGrid
+      
+      // Custom tab specific state
       fileClassificationResult,
       manualClassifications,
       manuallyAssignedFiles,
@@ -591,6 +586,8 @@ export default {
       totalMatchedCount,
       totalUnmatchedCount,
       totalFilesCount,
+      
+      // Custom tab specific methods
       handleManualClassification,
       handleReassignFile,
       getUnrecognizedFiles,

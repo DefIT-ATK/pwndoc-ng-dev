@@ -75,7 +75,7 @@ import VulnerabilityPreview from './vulnerability-preview.vue'
 import AuditSelection from './audit-selection.vue'
 import SelectedFilesGrid from './selected-files-grid.vue'
 import { useNessusParser } from '../composables/useNessusParser'
-import { useParserDispatcher } from '../composables/useParserDispatcher'
+import { useStandardParserTab, useStandardFileGrid } from '../composables/useStandardParserTab'
 
 export default defineComponent({
   name: 'NessusTab',
@@ -124,39 +124,26 @@ export default defineComponent({
       addFiles  // Expose addFiles method for routing
     } = useNessusParser()
 
-    // Get parser dispatcher for registration
-    const { registerParserInstance, unregisterParserInstance } = useParserDispatcher()
-
-    // Register this parser instance for file routing
-    onMounted(() => {
-      registerParserInstance('nessus', {
-        handleFileChange  // This is the key - same method as normal file uploads
-      })
+    // Use standard parser tab interface (handles registration automatically)
+    const standardParser = useStandardParserTab('nessus', null, {
+      handleFileChange,
+      addFiles
     })
 
-    // Unregister when component is unmounted
-    onUnmounted(() => {
-      unregisterParserInstance('nessus')
-    })
-
-    // Methods for SelectedFilesGrid component
-    const handleClearAll = () => {
-      if (window.confirm('Are you sure you want to remove all files? This action cannot be undone.')) {
-        clearFiles()
-      }
-    }
-
-    const handleRemoveFile = (fileToRemove) => {
-      const index = nessusFiles.value.findIndex(f => f.name === fileToRemove.name)
-      if (index !== -1) {
-        handleFileRemove(index)
-      }
-    }
+    // Standard file grid handlers
+    const { handleClearAll, handleRemoveFile } = useStandardFileGrid(
+      nessusFiles,
+      handleFileRemove,
+      clearFiles
+    )
 
     return {
       $q,
+      // File state
       nessusFiles,
       selectedFiles: nessusFiles, // Alias for SelectedFilesGrid
+      
+      // Parser state
       parsedVulnerabilities,
       selectedVulnerabilities,
       debugInfo,
@@ -165,11 +152,16 @@ export default defineComponent({
       totalVulnerabilities,
       selectedAudit,
       uploadAreaProps,
-      parseAllFiles,
-      handleFileChange,
-      handleFileRemove,
+      
+      // Standard interface (includes handleFileChange, registration, etc.)
+      ...standardParser,
+      
+      // File grid handlers (now standardized)
       handleClearAll,
       handleRemoveFile,
+      
+      // Parser-specific methods
+      parseAllFiles,
       importVulnerabilities
     }
   }

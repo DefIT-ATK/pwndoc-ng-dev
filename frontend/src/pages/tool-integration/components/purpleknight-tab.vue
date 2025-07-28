@@ -30,7 +30,7 @@
 
         <!-- Audit Selection -->
         <AuditSelection
-          v-if="parsedVulnerabilities.length > 0"
+          v-if="parsedVulnerabilities && parsedVulnerabilities.length > 0"
           :audits="audits"
           :selected-audit="selectedAudit"
           :loading="loadingAudits"
@@ -39,7 +39,7 @@
         
         <!-- Preview Section -->
         <VulnerabilityPreview
-          v-if="parsedVulnerabilities.length > 0"
+          v-if="parsedVulnerabilities && parsedVulnerabilities.length > 0"
           :vulnerabilities="parsedVulnerabilities"
           :selected="selectedVulnerabilities"
           :audits="audits"
@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import { defineComponent, inject, onMounted, onUnmounted } from 'vue'
+import { defineComponent, inject } from 'vue'
 import { useQuasar } from 'quasar'
 import FileUploadArea from './file-upload-area.vue'
 import DebugInfoPanel from './debug-info-panel.vue'
@@ -75,7 +75,7 @@ import VulnerabilityPreview from './vulnerability-preview.vue'
 import AuditSelection from './audit-selection.vue'
 import SelectedFilesGrid from './selected-files-grid.vue'
 import { usePurpleKnightParser } from '../composables/usePurpleKnightParser'
-import { useParserDispatcher } from '../composables/useParserDispatcher'
+import { useStandardParserTab } from '../composables/useStandardParserTab'
 
 export default defineComponent({
   name: 'PurpleKnightTab',
@@ -103,78 +103,18 @@ export default defineComponent({
     const $q = useQuasar()
     const settings = inject('$settings')
     
-    const {
-      // State
-      files,
-      parsedVulnerabilities,
-      selectedVulnerabilities,
-      debugInfo,
-      parsing,
-      importing,
-      totalVulnerabilities,
-      totalOriginalFindings,
-      selectedAudit,
-      uploadAreaProps,
-      
-      // Methods
-      parseAllFiles,
-      handleFileChange,
-      handleFileRemove,
-      clearFiles,
-      importSelected
-    } = usePurpleKnightParser(settings)
-
-    // Get parser dispatcher for registration
-    const { registerParserInstance, unregisterParserInstance } = useParserDispatcher()
-
-    // Register this parser instance for file routing
-    onMounted(() => {
-      registerParserInstance('purpleknight', {
-        handleFileChange  // This is the key - same method as normal file uploads
-      })
-    })
-
-    // Unregister when component is unmounted
-    onUnmounted(() => {
-      unregisterParserInstance('purpleknight')
-    })
-
-    // Methods for SelectedFilesGrid component
-    const handleClearAll = () => {
-      if (window.confirm('Are you sure you want to remove all files? This action cannot be undone.')) {
-        clearFiles()
-      }
-    }
-
-    const handleRemoveFile = (fileToRemove) => {
-      const index = files.value.findIndex(f => f.name === fileToRemove.name)
-      if (index !== -1) {
-        handleFileRemove(index)
-      }
-    }
+    const purpleKnightParser = usePurpleKnightParser(settings)
+    
+    // Standard parser tab interface
+    const standardInterface = useStandardParserTab('purpleknight', purpleKnightParser)
 
     return {
-      // State
-      files,
-      selectedFiles: files, // Alias for SelectedFilesGrid
-      parsedVulnerabilities,
-      selectedVulnerabilities,
-      debugInfo,
-      parsing,
-      importing,
-      totalVulnerabilities,
-      totalOriginalFindings,
-      selectedAudit,
-      uploadAreaProps,
+      // Standard interface (includes file handling, registration, etc.)
+      ...standardInterface,
       
-      // Methods
-      parseAllFiles,
-      handleFileChange,
-      handleFileRemove,
-      handleClearAll,
-      handleRemoveFile,
-      clearFiles,
-      importSelected,
+      // Parser-specific state and methods (explicit to ensure availability)
+      ...purpleKnightParser,
+      selectedFiles: purpleKnightParser.files, // Alias for SelectedFilesGrid
       
       // Settings
       settings

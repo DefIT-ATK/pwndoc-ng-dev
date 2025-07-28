@@ -30,7 +30,7 @@
 
       <!-- Audit Selection -->
       <AuditSelection
-        v-if="parsedVulnerabilities.length > 0"
+        v-if="parsedVulnerabilities && parsedVulnerabilities.length > 0"
         :audits="audits"
         :selected-audit="selectedAudit"
         :loading="loadingAudits"
@@ -39,7 +39,7 @@
       
       <!-- Preview Section -->
       <VulnerabilityPreview
-        v-if="parsedVulnerabilities.length > 0"
+        v-if="parsedVulnerabilities && parsedVulnerabilities.length > 0"
         :vulnerabilities="parsedVulnerabilities"
         :selected="selectedVulnerabilities"
         :audits="audits"
@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import { defineComponent, inject, onMounted, onUnmounted } from 'vue'
+import { defineComponent, inject } from 'vue'
 import { useQuasar } from 'quasar'
 import FileUploadArea from './file-upload-area.vue'
 import DebugInfoPanel from './debug-info-panel.vue'
@@ -75,7 +75,7 @@ import VulnerabilityPreview from './vulnerability-preview.vue'
 import AuditSelection from './audit-selection.vue'
 import SelectedFilesGrid from './selected-files-grid.vue'
 import { usePowerUpSQLParser } from '../composables/usePowerUpSQLParser'
-import { useParserDispatcher } from '../composables/useParserDispatcher'
+import { useStandardParserTab } from '../composables/useStandardParserTab'
 
 export default defineComponent({
   name: 'PowerUpSQLTab',
@@ -103,73 +103,21 @@ export default defineComponent({
     const $q = useQuasar()
     const settings = inject('$settings')
     
-    const {
-      // State
-      powerUpSQLFiles,
-      parsedVulnerabilities,
-      selectedVulnerabilities,
-      debugInfo,
-      parsing,
-      importing,
-      totalVulnerabilities,
-      selectedAudit,
-      uploadAreaProps,
-      
-      // Methods
-      parseAllFiles,
-      handleFileChange,
-      handleFileRemove,
-      clearFiles,
-      importVulnerabilities
-    } = usePowerUpSQLParser()
-
-    // Get parser dispatcher for registration
-    const { registerParserInstance, unregisterParserInstance } = useParserDispatcher()
-
-    // Register this parser instance for file routing
-    onMounted(() => {
-      registerParserInstance('powerupsql', {
-        handleFileChange  // This is the key - same method as normal file uploads
-      })
-    })
-
-    // Unregister when component is unmounted
-    onUnmounted(() => {
-      unregisterParserInstance('powerupsql')
-    })
-
-    // Methods for SelectedFilesGrid component
-    const handleClearAll = () => {
-      if (window.confirm('Are you sure you want to remove all files? This action cannot be undone.')) {
-        clearFiles()
-      }
-    }
-
-    const handleRemoveFile = (fileToRemove) => {
-      const index = powerUpSQLFiles.value.findIndex(f => f.name === fileToRemove.name)
-      if (index !== -1) {
-        handleFileRemove(index)
-      }
-    }
+    const powerUpSQLParser = usePowerUpSQLParser()
+    
+    // Standard parser tab interface
+    const standardInterface = useStandardParserTab('powerupsql', powerUpSQLParser)
 
     return {
-      $q,
-      powerUpSQLFiles,
-      selectedFiles: powerUpSQLFiles, // Alias for SelectedFilesGrid
-      parsedVulnerabilities,
-      selectedVulnerabilities,
-      debugInfo,
-      parsing,
-      importing,
-      totalVulnerabilities,
-      selectedAudit,
-      uploadAreaProps,
-      parseAllFiles,
-      handleFileChange,
-      handleFileRemove,
-      handleClearAll,
-      handleRemoveFile,
-      importVulnerabilities
+      // Standard interface (includes file handling, registration, etc.)
+      ...standardInterface,
+      
+      // Parser-specific state and methods (explicit to ensure availability)
+      ...powerUpSQLParser,
+      selectedFiles: powerUpSQLParser.powerUpSQLFiles, // Alias for SelectedFilesGrid
+      
+      // Quasar instance
+      $q
     }
   }
 })

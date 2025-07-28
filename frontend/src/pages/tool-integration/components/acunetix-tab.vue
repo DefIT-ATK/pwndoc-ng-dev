@@ -50,7 +50,7 @@
 
             <!-- Audit Selection -->
             <AuditSelection
-              v-if="parsedVulnerabilities.length > 0"
+              v-if="parsedVulnerabilities && parsedVulnerabilities.length > 0"
               :audits="audits"
               :selected-audit="selectedAudit"
               :loading="loadingAudits"
@@ -59,7 +59,7 @@
             
             <!-- Preview Section -->
             <VulnerabilityPreview
-              v-if="parsedVulnerabilities.length > 0"
+              v-if="parsedVulnerabilities && parsedVulnerabilities.length > 0"
               :vulnerabilities="parsedVulnerabilities"
               :selected="selectedVulnerabilities"
               :audits="audits"
@@ -111,7 +111,7 @@
               </div>
 
               <!-- Target Groups Grid -->
-              <div v-if="targetGroups.length > 0" class="row q-gutter-sm">
+              <div v-if="targetGroups && targetGroups.length > 0" class="row q-gutter-sm">
                 <div 
                   v-for="group in targetGroups" 
                   :key="group.value"
@@ -219,17 +219,17 @@
               </div>
 
               <!-- Selection Summary -->
-              <div v-if="selectedTargetGroups.length > 0" class="q-mt-md">
+              <div v-if="selectedTargetGroups && selectedTargetGroups.length > 0" class="q-mt-md">
                 <q-banner rounded class="bg-blue-1 text-blue-8">
                   <template v-slot:avatar>
                     <q-icon name="info" color="blue" />
                   </template>
                   <div class="text-weight-medium">
-                    {{ selectedTargetGroups.length }} target group{{ selectedTargetGroups.length > 1 ? 's' : '' }} selected
+                    {{ selectedTargetGroups && selectedTargetGroups.length ? selectedTargetGroups.length : 0 }} target group{{ (selectedTargetGroups && selectedTargetGroups.length > 1) ? 's' : '' }} selected
                   </div>
                   <div class="text-body2 q-mt-xs">
                     <span v-for="(groupId, index) in selectedTargetGroups" :key="groupId">
-                      {{ getTargetGroupName(groupId) }}{{ index < selectedTargetGroups.length - 1 ? ', ' : '' }}
+                      {{ getTargetGroupName(groupId) }}{{ index < (selectedTargetGroups ? selectedTargetGroups.length - 1 : 0) ? ', ' : '' }}
                     </span>
                   </div>
                 </q-banner>
@@ -244,9 +244,9 @@
                 <div class="col-auto">
                   <q-btn
                     color="primary"
-                    :label="`Export ${selectedTargetGroups.length} Target Group${selectedTargetGroups.length > 1 ? 's' : ''}`"
+                    :label="`Export ${selectedTargetGroups && selectedTargetGroups.length ? selectedTargetGroups.length : 0} Target Group${(selectedTargetGroups && selectedTargetGroups.length > 1) ? 's' : ''}`"
                     :loading="exporting"
-                    :disable="!selectedTargetGroups || selectedTargetGroups.length === 0"
+                    :disable="!selectedTargetGroups || !selectedTargetGroups.length"
                     @click="exportSelectedGroups"
                     icon="download"
                   />
@@ -309,7 +309,7 @@
 </template>
 
 <script>
-import { defineComponent, inject, ref, onMounted, onUnmounted } from 'vue'
+import { defineComponent, inject, ref } from 'vue'
 import { Notify } from 'quasar'
 import FileUploadArea from './file-upload-area.vue'
 import AuditSelection from './audit-selection.vue'
@@ -318,7 +318,7 @@ import DebugInfoPanel from './debug-info-panel.vue'
 import SelectedFilesGrid from './selected-files-grid.vue'
 import { useAcunetixParser } from '../composables/useAcunetixParser'
 import { useAcunetixApi } from '../composables/useAcunetixApi'
-import { useParserDispatcher } from '../composables/useParserDispatcher'
+import { useStandardParserTab } from '../composables/useStandardParserTab'
 
 export default defineComponent({
   name: 'AcunetixTab',
@@ -349,26 +349,14 @@ export default defineComponent({
     // File Upload Parser (existing functionality)
     const fileParser = useAcunetixParser()
     
+    // Standard parser tab interface
+    const standardInterface = useStandardParserTab('acunetix', fileParser)
+    
     // API Integration (new functionality)
     const apiIntegration = useAcunetixApi()
     
     // API-specific state (simplified)
     const selectedTargetGroups = ref([])
-
-    // Parser dispatcher for file routing
-    const { registerParserInstance, unregisterParserInstance } = useParserDispatcher()
-
-    // Register this parser instance for file routing
-    onMounted(() => {
-      registerParserInstance('acunetix', {
-        handleFileChange: fileParser.handleFileChange  // Same method as normal file uploads
-      })
-    })
-
-    // Unregister when component is unmounted
-    onUnmounted(() => {
-      unregisterParserInstance('acunetix')
-    })
 
     // Handle target groups change
     const onTargetGroupsChange = (newValues) => {
@@ -517,11 +505,12 @@ export default defineComponent({
       // Tab state
       activeTab,
       
-      // File parser (existing)
+      // Standard interface (includes file handling, registration, etc.)
+      ...standardInterface,
+      
+      // File parser state (explicit to ensure availability)
       ...fileParser,
       selectedFiles: fileParser.acunetixFiles, // Alias for SelectedFilesGrid
-      handleClearAll,
-      handleRemoveFile,
       
       // API integration (simplified)
       ...apiIntegration,
