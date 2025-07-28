@@ -75,7 +75,7 @@ export default defineComponent({
     type: {
       type: String,
       default: 'nessus',
-      validator: (value) => ['nessus', 'pingcastle'].includes(value)
+      validator: (value) => ['nessus', 'pingcastle', 'purpleknight', 'acunetix', 'powerupsql', 'custom'].includes(value)
     }
   }
 })

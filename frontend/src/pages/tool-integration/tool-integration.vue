@@ -18,6 +18,7 @@
               align="justify"
               narrow-indicator
             >
+              <q-tab name="universal" label="Universal Hub" />
               <q-tab name="nessus" :label="$t('toolIntegration.tools.nessus')" />
               <q-tab name="pingcastle" :label="$t('toolIntegration.tools.pingcastle')" />
               <q-tab name="acunetix" :label="$t('toolIntegration.tools.acunetix')" />
@@ -30,6 +31,13 @@
 
             <!-- All tab components are always mounted, visibility controlled by CSS -->
             <div class="tab-content">
+              <div :class="{ 'tab-panel': true, 'tab-panel--hidden': selectedTool !== 'universal' }">
+                <UniversalFileUploadHub 
+                  :audits="auditOptions"
+                  :loading-audits="loadingAudits"
+                />
+              </div>
+
               <div :class="{ 'tab-panel': true, 'tab-panel--hidden': selectedTool !== 'nessus' }">
                 <NessusTab 
                   :audits="auditOptions"
@@ -81,8 +89,9 @@
 </template>
 
 <script>
-import { defineComponent, ref, onMounted, provide, getCurrentInstance } from 'vue'
+import { defineComponent, ref, onMounted, onUnmounted, provide, getCurrentInstance } from 'vue'
 import { Notify } from 'quasar'
+import UniversalFileUploadHub from './components/universal-file-upload-hub.vue'
 import NessusTab from './components/nessus-tab.vue'
 import PingCastleTab from './components/pingcastle-tab.vue'
 import AcunetixTab from './components/acunetix-tab.vue'
@@ -95,6 +104,7 @@ export default defineComponent({
   name: 'ToolIntegration',
 
   components: {
+    UniversalFileUploadHub,
     NessusTab,
     PingCastleTab,
     AcunetixTab,
@@ -105,9 +115,24 @@ export default defineComponent({
 
   setup() {
     const instance = getCurrentInstance()
-    const selectedTool = ref('nessus')
+    const selectedTool = ref('universal')
     const auditOptions = ref([])
     const loadingAudits = ref(false)
+
+    // Tab switching event listener for Universal Hub routing
+    const handleTabSwitch = (event) => {
+      const { tabName } = event.detail
+      if (tabName && tabName !== selectedTool.value) {
+        selectedTool.value = tabName
+        
+        Notify.create({
+          message: `Switched to ${tabName} tab`,
+          color: 'info',
+          position: 'top-right',
+          timeout: 2000
+        })
+      }
+    }
 
     // Provide settings to child components
     provide('$settings', instance?.appContext.config.globalProperties.$settings)
@@ -133,6 +158,9 @@ export default defineComponent({
     }
 
     onMounted(async () => {
+      // Set up event listener for tab switching from Universal Hub
+      document.addEventListener('switchToTab', handleTabSwitch)
+      
       // Always reload settings from backend when entering this page
       const settings = instance?.appContext.config.globalProperties.$settings
       if (settings && settings.refresh) {
@@ -141,6 +169,11 @@ export default defineComponent({
         await settings.refresh()
       }
       await loadAudits()
+    })
+
+    onUnmounted(() => {
+      // Clean up event listener
+      document.removeEventListener('switchToTab', handleTabSwitch)
     })
 
     const settings = instance?.appContext.config.globalProperties.$settings

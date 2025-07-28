@@ -7,7 +7,6 @@
       @dragover.prevent="isDragOver = true"
       @dragenter.prevent="isDragOver = true"
       @dragleave.prevent="isDragOver = false"
-      @click="$refs.fileInput.click()"
     >
       <div class="upload-content">
         <q-icon name="fa fa-cloud-upload-alt" size="48px" color="primary" />
@@ -15,6 +14,26 @@
         <div class="text-body2 text-grey-6">{{ subtitle }}</div>
         <div class="text-caption text-grey-5 q-mt-sm">
           {{ supportedFormats }}
+        </div>
+        <div class="q-mt-md row q-gutter-sm justify-center">
+          <q-btn 
+            color="primary" 
+            outline 
+            label="Select Files" 
+            icon="insert_drive_file"
+            @click="$refs.fileInput.click()"
+            size="sm"
+            no-caps
+          />
+          <q-btn 
+            color="secondary" 
+            outline 
+            label="Select Folder" 
+            icon="folder"
+            @click="$refs.folderInput.click()"
+            size="sm"
+            no-caps
+          />
         </div>
       </div>
     </div>
@@ -26,6 +45,14 @@
       multiple
       style="display: none"
       @change="onFileSelected"
+    />
+    <input
+      ref="folderInput"
+      type="file"
+      webkitdirectory
+      multiple
+      style="display: none"
+      @change="onFolderSelected"
     />
     
     <!-- Selected files info - Hide this since parent shows files in grid -->
@@ -92,32 +119,133 @@ export default defineComponent({
       // Clear the input value to allow re-selecting the same file
       event.target.value = ''
     }
+
+    const onFolderSelected = (event) => {
+      const newFiles = Array.from(event.target.files)
+      if (newFiles.length > 0) {
+        console.log(`Selected folder with ${newFiles.length} files`)
+        emit('files-changed', newFiles)
+      }
+      // Clear the input value to allow re-selecting the same folder
+      event.target.value = ''
+    }
+
+    const processDataTransferItems = async (items) => {
+      const files = []
+      
+      const processEntry = async (entry) => {
+        if (entry.isFile) {
+          return new Promise((resolve) => {
+            entry.file(resolve, () => resolve(null))
+          })
+        } else if (entry.isDirectory) {
+          const dirReader = entry.createReader()
+          const allFiles = []
+          
+          const readBatch = () => {
+            return new Promise((resolve) => {
+              dirReader.readEntries(async (entries) => {
+                if (entries.length === 0) {
+                  resolve([])
+                  return
+                }
+                
+                const promises = entries.map(processEntry)
+                const results = await Promise.all(promises)
+                const flatResults = results.flat().filter(Boolean)
+                
+                resolve(flatResults)
+              }, () => resolve([]))
+            })
+          }
+          
+          // Keep reading batches until we get an empty batch
+          let batch = await readBatch()
+          while (batch.length > 0) {
+            allFiles.push(...batch)
+            batch = await readBatch()
+          }
+          
+          return allFiles
+        }
+        return null
+      }
+
+      // Process all dropped items
+      for (const item of items) {
+        if (item.webkitGetAsEntry) {
+          const entry = item.webkitGetAsEntry()
+          if (entry) {
+            const result = await processEntry(entry)
+            if (Array.isArray(result)) {
+              files.push(...result)
+            } else if (result) {
+              files.push(result)
+            }
+          }
+        } else if (item.getAsFile) {
+          const file = item.getAsFile()
+          if (file) {
+            files.push(file)
+          }
+        }
+      }
+      
+      return files
+    }
     
-    const onFileDrop = (event) => {
+    const onFileDrop = async (event) => {
       isDragOver.value = false
       event.preventDefault()
       
-      const droppedFiles = Array.from(event.dataTransfer.files)
-      const validFiles = droppedFiles.filter(file => {
-        const ext = '.' + file.name.split('.').pop().toLowerCase()
-        return props.acceptedFormats.includes(ext)
-      })
+      const items = Array.from(event.dataTransfer.items)
       
-      if (validFiles.length > 0) {
-        emit('files-changed', validFiles)
-      } else {
-        const formatList = props.acceptedFormats.join(', ')
-        Notify.create({
-          message: `No valid files found. Please use ${formatList} files.`,
-          color: 'negative',
-          position: 'top-right'
+      if (items.length > 0 && items[0].webkitGetAsEntry) {
+        // Modern browsers with folder support
+        console.log('Processing dropped items with folder support...')
+        const files = await processDataTransferItems(items)
+        
+        const validFiles = files.filter(file => {
+          const ext = '.' + file.name.split('.').pop().toLowerCase()
+          return props.acceptedFormats.includes(ext) || props.acceptedFormats.includes('*')
         })
+        
+        if (validFiles.length > 0) {
+          console.log(`Found ${validFiles.length} valid files from ${files.length} total files`)
+          emit('files-changed', validFiles)
+        } else {
+          const formatList = props.acceptedFormats.includes('*') ? 'any format' : props.acceptedFormats.join(', ')
+          Notify.create({
+            message: `No valid files found in dropped folders. Please use ${formatList} files.`,
+            color: 'negative',
+            position: 'top-right'
+          })
+        }
+      } else {
+        // Fallback for older browsers or simple file drops
+        const droppedFiles = Array.from(event.dataTransfer.files)
+        const validFiles = droppedFiles.filter(file => {
+          const ext = '.' + file.name.split('.').pop().toLowerCase()
+          return props.acceptedFormats.includes(ext) || props.acceptedFormats.includes('*')
+        })
+        
+        if (validFiles.length > 0) {
+          emit('files-changed', validFiles)
+        } else {
+          const formatList = props.acceptedFormats.includes('*') ? 'any format' : props.acceptedFormats.join(', ')
+          Notify.create({
+            message: `No valid files found. Please use ${formatList} files.`,
+            color: 'negative',
+            position: 'top-right'
+          })
+        }
       }
     }
     
     return {
       isDragOver,
       onFileSelected,
+      onFolderSelected,
       onFileDrop
     }
   }
@@ -130,7 +258,6 @@ export default defineComponent({
   border-radius: 8px;
   padding: 40px 20px;
   text-align: center;
-  cursor: pointer;
   transition: all 0.3s ease;
   background-color: #fafafa;
 }
@@ -147,6 +274,6 @@ export default defineComponent({
 }
 
 .upload-content {
-  pointer-events: none;
+  pointer-events: auto;
 }
 </style>

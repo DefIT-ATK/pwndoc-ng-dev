@@ -120,6 +120,35 @@ export default class BaseCustomParser extends BaseParser {
   }
 
   /**
+   * Get file directory path (if available from webkitRelativePath)
+   */
+  getFileDirectory(file) {
+    if (file.webkitRelativePath) {
+      const pathParts = file.webkitRelativePath.split('/')
+      pathParts.pop() // Remove filename
+      return pathParts.join('/')
+    }
+    return ''
+  }
+
+  /**
+   * Group files by directory
+   */
+  groupFilesByDirectory(files) {
+    const groups = {}
+    
+    files.forEach(file => {
+      const dir = this.getFileDirectory(file) || 'root'
+      if (!groups[dir]) {
+        groups[dir] = []
+      }
+      groups[dir].push(file)
+    })
+    
+    return groups
+  }
+
+  /**
    * Parse CSV content into array of objects
    */
   parseCSV(content, delimiter = ',') {

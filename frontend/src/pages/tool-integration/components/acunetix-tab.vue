@@ -309,7 +309,7 @@
 </template>
 
 <script>
-import { defineComponent, ref } from 'vue'
+import { defineComponent, ref, onMounted, onUnmounted } from 'vue'
 import { Notify } from 'quasar'
 import FileUploadArea from './file-upload-area.vue'
 import AuditSelection from './audit-selection.vue'
@@ -318,6 +318,7 @@ import DebugInfoPanel from './debug-info-panel.vue'
 import SelectedFilesGrid from './selected-files-grid.vue'
 import { useAcunetixParser } from '../composables/useAcunetixParser'
 import { useAcunetixApi } from '../composables/useAcunetixApi'
+import { useParserDispatcher } from '../composables/useParserDispatcher'
 
 export default defineComponent({
   name: 'AcunetixTab',
@@ -353,6 +354,21 @@ export default defineComponent({
     
     // API-specific state (simplified)
     const selectedTargetGroups = ref([])
+
+    // Parser dispatcher for file routing
+    const { registerParserInstance, unregisterParserInstance } = useParserDispatcher()
+
+    // Register this parser instance for file routing
+    onMounted(() => {
+      registerParserInstance('acunetix', {
+        handleFileChange: fileParser.handleFileChange  // Same method as normal file uploads
+      })
+    })
+
+    // Unregister when component is unmounted
+    onUnmounted(() => {
+      unregisterParserInstance('acunetix')
+    })
 
     // Handle target groups change
     const onTargetGroupsChange = (newValues) => {

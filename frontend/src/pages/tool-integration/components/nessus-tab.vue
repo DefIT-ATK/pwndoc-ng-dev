@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import { defineComponent, inject } from 'vue'
+import { defineComponent, inject, onMounted, onUnmounted } from 'vue'
 import { useQuasar } from 'quasar'
 import FileUploadArea from './file-upload-area.vue'
 import DebugInfoPanel from './debug-info-panel.vue'
@@ -75,6 +75,7 @@ import VulnerabilityPreview from './vulnerability-preview.vue'
 import AuditSelection from './audit-selection.vue'
 import SelectedFilesGrid from './selected-files-grid.vue'
 import { useNessusParser } from '../composables/useNessusParser'
+import { useParserDispatcher } from '../composables/useParserDispatcher'
 
 export default defineComponent({
   name: 'NessusTab',
@@ -119,8 +120,24 @@ export default defineComponent({
       handleFileChange,
       handleFileRemove,
       clearFiles,
-      importVulnerabilities
+      importVulnerabilities,
+      addFiles  // Expose addFiles method for routing
     } = useNessusParser()
+
+    // Get parser dispatcher for registration
+    const { registerParserInstance, unregisterParserInstance } = useParserDispatcher()
+
+    // Register this parser instance for file routing
+    onMounted(() => {
+      registerParserInstance('nessus', {
+        handleFileChange  // This is the key - same method as normal file uploads
+      })
+    })
+
+    // Unregister when component is unmounted
+    onUnmounted(() => {
+      unregisterParserInstance('nessus')
+    })
 
     // Methods for SelectedFilesGrid component
     const handleClearAll = () => {

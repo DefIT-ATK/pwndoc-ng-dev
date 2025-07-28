@@ -668,8 +668,8 @@ export default {
         custom: {
             title: 'Custom Vulnerability Parsers',
             description: 'Advanced parsing system for custom vulnerability analysis with dependency-based detection',
-            dragDropTitle: 'Drop analysis files here',
-            dragDropSubtitle: 'Upload files for custom vulnerability analysis',
+            dragDropTitle: 'Drop files or folders here',
+            dragDropSubtitle: 'Upload files or full directories for custom vulnerability analysis',
             supportedFormats: 'Supports: CSV, TXT, XML, JSON and other analysis files',
             import: 'Import Custom Vulnerabilities',
             analyzing: 'Analyzing files for custom parsers...',

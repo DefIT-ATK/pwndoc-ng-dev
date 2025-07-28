@@ -12,6 +12,10 @@ export default class AdminPasswordSharingParser extends BaseCustomParser {
   async parseFiles(files) {
     console.log('> Searching for shared passwords between enabled users and domain admins')
     
+    // Group files by directory for better organization
+    const fileGroups = this.groupFilesByDirectory(files)
+    console.log('Files organized by directory:', Object.keys(fileGroups))
+    
     // Find the required files based on dependency system
     const enabledUsersFile = this.findFileByType(files, ['NTDS Dump Enabled Users', 'NTDS Dump CSV'])
     const daFile = this.findFileByType(files, ['Domain Admins List'])
@@ -20,8 +24,8 @@ export default class AdminPasswordSharingParser extends BaseCustomParser {
       throw new Error('Required files not found: NTDS Dump Enabled Users and Domain Admins List')
     }
 
-    console.log(`Enabled Users File: ${enabledUsersFile.name}`)
-    console.log(`Domain Admins File: ${daFile.name}`)
+    console.log(`Enabled Users File: ${enabledUsersFile.name} (from: ${this.getFileDirectory(enabledUsersFile) || 'root'})`)
+    console.log(`Domain Admins File: ${daFile.name} (from: ${this.getFileDirectory(daFile) || 'root'})`)
 
     // Process both files together - equivalent to prepare_poc function
     const { poc, scope } = await this.preparePoc(enabledUsersFile, daFile)

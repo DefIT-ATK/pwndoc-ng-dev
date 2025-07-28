@@ -67,7 +67,7 @@
 </template>
 
 <script>
-import { defineComponent, inject } from 'vue'
+import { defineComponent, inject, onMounted, onUnmounted } from 'vue'
 import { useQuasar } from 'quasar'
 import FileUploadArea from './file-upload-area.vue'
 import DebugInfoPanel from './debug-info-panel.vue'
@@ -75,6 +75,7 @@ import VulnerabilityPreview from './vulnerability-preview.vue'
 import AuditSelection from './audit-selection.vue'
 import SelectedFilesGrid from './selected-files-grid.vue'
 import { usePowerUpSQLParser } from '../composables/usePowerUpSQLParser'
+import { useParserDispatcher } from '../composables/useParserDispatcher'
 
 export default defineComponent({
   name: 'PowerUpSQLTab',
@@ -121,6 +122,21 @@ export default defineComponent({
       clearFiles,
       importVulnerabilities
     } = usePowerUpSQLParser()
+
+    // Get parser dispatcher for registration
+    const { registerParserInstance, unregisterParserInstance } = useParserDispatcher()
+
+    // Register this parser instance for file routing
+    onMounted(() => {
+      registerParserInstance('powerupsql', {
+        handleFileChange  // This is the key - same method as normal file uploads
+      })
+    })
+
+    // Unregister when component is unmounted
+    onUnmounted(() => {
+      unregisterParserInstance('powerupsql')
+    })
 
     // Methods for SelectedFilesGrid component
     const handleClearAll = () => {

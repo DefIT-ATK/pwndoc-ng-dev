@@ -502,6 +502,7 @@ export function useNessusParser() {
     handleFileChange,
     handleFileRemove,
     clearFiles: clearAllFiles,
-    importVulnerabilities
+    importVulnerabilities,
+    addFiles  // Expose addFiles for Universal Hub routing
   }
 }

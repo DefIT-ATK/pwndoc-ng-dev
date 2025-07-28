@@ -384,12 +384,13 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useCustomParsers } from '../composables/useCustomParsers'
 import { customVulnRegistry } from '@/services/custom-vulnerability-registry'
 import FileUploadArea from './file-upload-area.vue'
 import AuditSelection from './audit-selection.vue'
 import VulnerabilityPreview from './vulnerability-preview.vue'
+import { useParserDispatcher } from '../composables/useParserDispatcher'
 
 export default {
   name: 'CustomTab',
@@ -449,6 +450,9 @@ export default {
       return fileClassificationResult.value.summary.totalFiles
     })
 
+    // Get parser dispatcher for registration
+    const { registerParserInstance, unregisterParserInstance } = useParserDispatcher()
+
     const handleFilesChanged = async (files) => {
       customParsers.addFiles(files)
       // Get classification result from global storage (set by useCustomParsers)
@@ -458,6 +462,18 @@ export default {
         manualClassifications.value = {}
       }, 100)
     }
+
+    // Register this parser instance for file routing
+    onMounted(() => {
+      registerParserInstance('custom', {
+        handleFileChange: handleFilesChanged  // Custom tab uses different method name
+      })
+    })
+
+    // Unregister when component is unmounted
+    onUnmounted(() => {
+      unregisterParserInstance('custom')
+    })
 
     const handleFileRemoved = (index) => {
       customParsers.removeFile(index)
