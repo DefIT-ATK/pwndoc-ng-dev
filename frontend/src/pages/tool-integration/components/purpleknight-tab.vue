@@ -22,7 +22,7 @@
 
         <!-- Selected Files Grid -->
         <SelectedFilesGrid
-          :files="selectedFiles"
+          :files="selectedFiles || []"
           @clear-all="handleClearAll"
           @remove-file="handleRemoveFile"
           class="q-mb-md"
@@ -75,7 +75,7 @@ import VulnerabilityPreview from './vulnerability-preview.vue'
 import AuditSelection from './audit-selection.vue'
 import SelectedFilesGrid from './selected-files-grid.vue'
 import { usePurpleKnightParser } from '../composables/usePurpleKnightParser'
-import { useStandardParserTab } from '../composables/useStandardParserTab'
+import { useStandardParserTab, useStandardFileGrid } from '../composables/useStandardParserTab'
 
 export default defineComponent({
   name: 'PurpleKnightTab',
@@ -103,18 +103,64 @@ export default defineComponent({
     const $q = useQuasar()
     const settings = inject('$settings')
     
-    const purpleKnightParser = usePurpleKnightParser(settings)
+    const {
+      purpleKnightFiles,
+      parsedVulnerabilities,
+      selectedVulnerabilities,
+      debugInfo,
+      parsing,
+      importing,
+      totalVulnerabilities,
+      selectedAudit,
+      parseAllFiles,
+      handleFileChange,
+      handleFileRemove,
+      clearFiles,
+      importVulnerabilities,
+      addFiles  // Expose addFiles method for routing
+    } = usePurpleKnightParser(settings)
     
     // Standard parser tab interface
-    const standardInterface = useStandardParserTab('purpleknight', purpleKnightParser)
+    const standardInterface = useStandardParserTab('purpleknight', parseAllFiles, {
+      handleFileChange,  // Pass the original handleFileChange for registration
+      addFiles
+    })
+
+    // File management methods - use parser's own methods
+    const handleClearAll = () => {
+      if (window.confirm('Are you sure you want to remove all files? This will also clear all parsed vulnerabilities.')) {
+        clearFiles()  // Use the parser's clearFiles method
+      }
+    }
+
+    const handleRemoveFile = (fileToRemove) => {
+      const index = purpleKnightFiles.value.findIndex(f => f.name === fileToRemove.name)
+      if (index !== -1) {
+        handleFileRemove(index)  // Use the parser's handleFileRemove method
+      }
+    }
 
     return {
-      // Standard interface (includes file handling, registration, etc.)
-      ...standardInterface,
+      // File state
+      purpleKnightFiles,
+      selectedFiles: purpleKnightFiles, // Alias for SelectedFilesGrid
       
       // Parser-specific state and methods (explicit to ensure availability)
-      ...purpleKnightParser,
-      selectedFiles: purpleKnightParser.files, // Alias for SelectedFilesGrid
+      parsedVulnerabilities,
+      selectedVulnerabilities,
+      debugInfo,
+      parsing,
+      importing,
+      totalVulnerabilities,
+      selectedAudit,
+      
+      // Methods - use original parser methods, not standard interface
+      parseAllFiles,
+      handleFileChange,
+      handleFileRemove,
+      handleClearAll,
+      handleRemoveFile,
+      importVulnerabilities,
       
       // Settings
       settings

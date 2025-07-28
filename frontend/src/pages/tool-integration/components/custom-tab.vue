@@ -417,7 +417,7 @@ export default {
     const customParsers = useCustomParsers(props.settings)
     
     // Standard parser tab interface
-    const standardInterface = useStandardParserTab('custom', customParsers)
+    const standardInterface = useStandardParserTab('custom', null, customParsers)
     
     // File classification state
     const fileClassificationResult = ref(window.fileClassificationResult || {

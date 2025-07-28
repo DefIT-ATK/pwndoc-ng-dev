@@ -22,7 +22,7 @@
 
       <!-- Selected Files Grid -->
       <SelectedFilesGrid
-        :files="selectedFiles"
+        :files="selectedFiles || []"
         @clear-all="handleClearAll"
         @remove-file="handleRemoveFile"
         class="q-mb-md"
@@ -125,17 +125,24 @@ export default defineComponent({
     } = useNessusParser()
 
     // Use standard parser tab interface (handles registration automatically)
-    const standardParser = useStandardParserTab('nessus', null, {
-      handleFileChange,
+    const standardParser = useStandardParserTab('nessus', parseAllFiles, {
+      handleFileChange,  // Pass the original handleFileChange for registration
       addFiles
     })
 
-    // Standard file grid handlers
-    const { handleClearAll, handleRemoveFile } = useStandardFileGrid(
-      nessusFiles,
-      handleFileRemove,
-      clearFiles
-    )
+    // Methods for file grid - use parser's own methods
+    const handleClearAll = () => {
+      if (window.confirm('Are you sure you want to remove all files? This will also clear all parsed vulnerabilities.')) {
+        clearFiles()  // Use the parser's clearFiles method
+      }
+    }
+
+    const handleRemoveFile = (fileToRemove) => {
+      const index = nessusFiles.value.findIndex(f => f.name === fileToRemove.name)
+      if (index !== -1) {
+        handleFileRemove(index)  // Use the parser's handleFileRemove method
+      }
+    }
 
     return {
       $q,
@@ -153,8 +160,8 @@ export default defineComponent({
       selectedAudit,
       uploadAreaProps,
       
-      // Standard interface (includes handleFileChange, registration, etc.)
-      ...standardParser,
+      // Use the original parser's handleFileChange, not the standard one
+      handleFileChange,  // From useNessusParser
       
       // File grid handlers (now standardized)
       handleClearAll,

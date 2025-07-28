@@ -393,6 +393,7 @@ export function usePowerUpSQLParser() {
     uploadAreaProps,
     
     // Methods
+    addFiles,  // Add this for routing from Universal Hub
     parseAllFiles,
     handleFileChange,
     handleFileRemove,

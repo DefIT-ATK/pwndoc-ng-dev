@@ -326,6 +326,7 @@ export function usePingCastleParser(settings = null) {
     uploadAreaProps,
     
     // Methods
+    addFiles,  // Add this for routing from Universal Hub
     parseAllFiles,
     handleFileChange,
     handleFileRemove,

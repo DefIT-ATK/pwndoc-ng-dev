@@ -454,6 +454,7 @@ export function usePurpleKnightParser(settings = null) {
     selectedAudit,
     
     // Functions
+    addFiles,  // Add this for routing from Universal Hub
     handleFileChange,
     handleFileRemove,
     clearFiles: clearAllFiles,

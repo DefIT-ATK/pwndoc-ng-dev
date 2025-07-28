@@ -1,8 +1,8 @@
 <template>
-  <div v-if="files.length > 0" class="selected-files-grid">
+  <div v-if="files && files.length > 0" class="selected-files-grid">
     <div class="flex items-center justify-between q-mb-sm">
       <div class="text-subtitle1">
-        Selected Files ({{ files.length }})
+        Selected Files ({{ files ? files.length : 0 }})
       </div>
       <q-btn
         flat
@@ -16,7 +16,7 @@
     
     <div class="row q-gutter-sm">
       <div 
-        v-for="(file, index) in files" 
+        v-for="(file, index) in (files || [])" 
         :key="file.name"
         class="col-12 col-sm-6 col-md-4 col-lg-3"
       >
@@ -54,7 +54,7 @@ export default defineComponent({
   props: {
     files: {
       type: Array,
-      required: true
+      default: () => []
     }
   },
   

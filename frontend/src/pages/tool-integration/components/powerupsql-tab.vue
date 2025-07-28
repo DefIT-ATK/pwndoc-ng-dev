@@ -22,7 +22,7 @@
 
       <!-- Selected Files Grid -->
       <SelectedFilesGrid
-        :files="selectedFiles"
+        :files="selectedFiles || []"
         @clear-all="handleClearAll"
         @remove-file="handleRemoveFile"
         class="q-mb-md"
@@ -75,7 +75,7 @@ import VulnerabilityPreview from './vulnerability-preview.vue'
 import AuditSelection from './audit-selection.vue'
 import SelectedFilesGrid from './selected-files-grid.vue'
 import { usePowerUpSQLParser } from '../composables/usePowerUpSQLParser'
-import { useStandardParserTab } from '../composables/useStandardParserTab'
+import { useStandardParserTab, useStandardFileGrid } from '../composables/useStandardParserTab'
 
 export default defineComponent({
   name: 'PowerUpSQLTab',
@@ -106,15 +106,33 @@ export default defineComponent({
     const powerUpSQLParser = usePowerUpSQLParser()
     
     // Standard parser tab interface
-    const standardInterface = useStandardParserTab('powerupsql', powerUpSQLParser)
+    const standardInterface = useStandardParserTab('powerupsql', powerUpSQLParser.parseAllFiles, {
+      handleFileChange: powerUpSQLParser.handleFileChange,  // Pass the original handleFileChange for registration
+      ...powerUpSQLParser
+    })
+    
+    // File management methods - use parser's own methods
+    const handleClearAll = () => {
+      if (window.confirm('Are you sure you want to remove all files? This will also clear all parsed vulnerabilities.')) {
+        powerUpSQLParser.clearFiles()  // Use the parser's clearFiles method
+      }
+    }
+
+    const handleRemoveFile = (fileToRemove) => {
+      const index = powerUpSQLParser.powerUpSQLFiles.value.findIndex(f => f.name === fileToRemove.name)
+      if (index !== -1) {
+        powerUpSQLParser.handleFileRemove(index)  // Use the parser's handleFileRemove method
+      }
+    }
 
     return {
-      // Standard interface (includes file handling, registration, etc.)
-      ...standardInterface,
-      
       // Parser-specific state and methods (explicit to ensure availability)
       ...powerUpSQLParser,
       selectedFiles: powerUpSQLParser.powerUpSQLFiles, // Alias for SelectedFilesGrid
+      
+      // File management methods
+      handleClearAll,
+      handleRemoveFile,
       
       // Quasar instance
       $q

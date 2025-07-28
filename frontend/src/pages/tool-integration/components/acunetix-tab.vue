@@ -42,7 +42,7 @@
 
             <!-- Selected Files Grid -->
             <SelectedFilesGrid
-              :files="selectedFiles"
+              :files="selectedFiles || []"
               @clear-all="handleClearAll"
               @remove-file="handleRemoveFile"
               class="q-mb-md"
@@ -350,7 +350,10 @@ export default defineComponent({
     const fileParser = useAcunetixParser()
     
     // Standard parser tab interface
-    const standardInterface = useStandardParserTab('acunetix', fileParser)
+    const standardInterface = useStandardParserTab('acunetix', fileParser.parseAllFiles, {
+      handleFileChange: fileParser.handleFileChange,  // Pass the original handleFileChange for registration
+      ...fileParser
+    })
     
     // API Integration (new functionality)
     const apiIntegration = useAcunetixApi()
@@ -505,12 +508,13 @@ export default defineComponent({
       // Tab state
       activeTab,
       
-      // Standard interface (includes file handling, registration, etc.)
-      ...standardInterface,
-      
       // File parser state (explicit to ensure availability)
       ...fileParser,
       selectedFiles: fileParser.acunetixFiles, // Alias for SelectedFilesGrid
+      
+      // File management methods
+      handleClearAll,
+      handleRemoveFile,
       
       // API integration (simplified)
       ...apiIntegration,

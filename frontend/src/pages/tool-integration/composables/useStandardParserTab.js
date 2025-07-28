@@ -57,12 +57,16 @@ export function useStandardParserTab(parserType, parseFunction, parserInstance) 
   onMounted(() => {
     console.log(`🔌 Registering standard parser tab: ${parserType}`)
     
-    // Register with the standard interface
-    registerParserInstance(parserType, {
-      handleFileChange,
+    // Register with the original parser's handleFileChange method, not the standard one
+    const registrationObject = {
+      // Use original parser's handleFileChange if available, fallback to standard
+      handleFileChange: parserInstance?.handleFileChange || handleFileChange,
       // Include the original parser instance methods for advanced usage
       ...(parserInstance || {})
-    })
+    }
+    
+    console.log(`🔌 Registering ${parserType} with handleFileChange:`, !!registrationObject.handleFileChange)
+    registerParserInstance(parserType, registrationObject)
   })
 
   // Standard cleanup

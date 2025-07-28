@@ -41,7 +41,7 @@
     <input
       ref="fileInput"
       type="file"
-      :accept="acceptedFormats.join(',')"
+      :accept="acceptedFormats && acceptedFormats.length > 0 ? acceptedFormats.join(',') : '*'"
       multiple
       style="display: none"
       @change="onFileSelected"
@@ -90,7 +90,7 @@ export default defineComponent({
     },
     acceptedFormats: {
       type: Array,
-      required: true
+      default: () => ['*']
     },
     title: {
       type: String,
@@ -204,25 +204,18 @@ export default defineComponent({
         // Modern browsers with folder support
         console.log('Processing dropped items with folder support...')
         const files = await processDataTransferItems(items)
-        console.log('🔥 FileUploadArea: processDataTransferItems returned:', files.length, 'files')
-        console.log('🔥 FileUploadArea: files details:', files.map(f => ({ name: f.name, size: f.size, type: f.type })))
-        console.log('🔥 FileUploadArea: acceptedFormats:', props.acceptedFormats)
         
         const validFiles = files.filter(file => {
+          if (!props.acceptedFormats || props.acceptedFormats.length === 0) return true
           const ext = '.' + file.name.split('.').pop().toLowerCase()
-          const isValid = props.acceptedFormats.includes(ext) || props.acceptedFormats.includes('*')
-          console.log(`🔥 FileUploadArea: File ${file.name} (${ext}) - Valid: ${isValid}`)
-          return isValid
+          return props.acceptedFormats.includes(ext) || props.acceptedFormats.includes('*')
         })
-        
-        console.log('🔥 FileUploadArea: Valid files count:', validFiles.length)
         
         if (validFiles.length > 0) {
           console.log(`Found ${validFiles.length} valid files from ${files.length} total files`)
-          console.log('🔥 FileUploadArea: About to emit files-changed with:', validFiles.map(f => f.name))
           emit('files-changed', validFiles)
         } else {
-          const formatList = props.acceptedFormats.includes('*') ? 'any format' : props.acceptedFormats.join(', ')
+          const formatList = (props.acceptedFormats && props.acceptedFormats.includes('*')) ? 'any format' : (props.acceptedFormats || []).join(', ')
           Notify.create({
             message: `No valid files found in dropped folders. Please use ${formatList} files.`,
             color: 'negative',
@@ -233,6 +226,7 @@ export default defineComponent({
         // Fallback for older browsers or simple file drops
         const droppedFiles = Array.from(event.dataTransfer.files)
         const validFiles = droppedFiles.filter(file => {
+          if (!props.acceptedFormats || props.acceptedFormats.length === 0) return true
           const ext = '.' + file.name.split('.').pop().toLowerCase()
           return props.acceptedFormats.includes(ext) || props.acceptedFormats.includes('*')
         })
@@ -240,7 +234,7 @@ export default defineComponent({
         if (validFiles.length > 0) {
           emit('files-changed', validFiles)
         } else {
-          const formatList = props.acceptedFormats.includes('*') ? 'any format' : props.acceptedFormats.join(', ')
+          const formatList = (props.acceptedFormats && props.acceptedFormats.includes('*')) ? 'any format' : (props.acceptedFormats || []).join(', ')
           Notify.create({
             message: `No valid files found. Please use ${formatList} files.`,
             color: 'negative',

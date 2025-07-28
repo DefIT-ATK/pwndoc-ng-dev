@@ -22,7 +22,7 @@
 
       <!-- Selected Files Grid -->
       <SelectedFilesGrid
-        :files="selectedFiles"
+        :files="selectedFiles || []"
         @clear-all="handleClearAll"
         @remove-file="handleRemoveFile"
         class="q-mb-md"
@@ -116,6 +116,7 @@ export default defineComponent({
       uploadAreaProps,
       
       // Methods
+      addFiles,  // Add this for routing from Universal Hub
       parseAllFiles,
       handleFileChange,
       handleFileRemove,
@@ -124,8 +125,9 @@ export default defineComponent({
     } = usePingCastleParser(settings)
 
     // Use standard parser tab interface (handles registration automatically)
-    const standardParser = useStandardParserTab('pingcastle', null, {
-      handleFileChange
+    const standardParser = useStandardParserTab('pingcastle', parseAllFiles, {
+      handleFileChange,  // Pass the original handleFileChange for registration
+      addFiles
     })
 
     // Standard file grid handlers
