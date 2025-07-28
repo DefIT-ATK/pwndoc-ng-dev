@@ -6,7 +6,8 @@
       Universal File Upload Hub
     </div>
     <div class="text-body2 text-grey-6 q-mb-lg">
-      Upload files or folders from any security tool. They'll be automatically classified and routed to the appropriate parsers.
+      Upload files or folders from any security tool. They'll be automatically 
+      classified and routed to the appropriate parser tabs based on their content.
     </div>
 
     <!-- Single Universal Upload Area -->
@@ -20,8 +21,8 @@
         <file-upload-area
           :accepted-formats="['*']"
           title="Drop files or folders from any security tool"
-          subtitle="Automatic detection and routing to appropriate parsers"
-          supported-formats="All formats supported: .nessus, .xml, .json, .csv, .txt, .xlsx, etc."
+          subtitle="Enhanced automatic detection and routing using centralized parser registry"
+          supported-formats="Registry-based classification: Nessus (.nessus, .xml), Acunetix (.xml), PingCastle (.html, .xml), Purple Knight (.json, .xml, .html), PowerUpSQL (.csv, .txt), and more"
           @files-changed="handleFilesUploaded"
         />
         
@@ -36,6 +37,7 @@
     </q-card>
 
     <!-- File Classification Results -->
+    <!-- DEBUG: uploadedFiles.length = {{ uploadedFiles.length }} -->
     <div v-if="uploadedFiles.length > 0">
       <file-classification-panel
         :uploaded-files="uploadedFiles"
@@ -48,6 +50,11 @@
         @debug-classification="debugClassification"
         class="q-mb-lg"
       />
+    </div>
+
+    <!-- DEBUG: Show raw file count -->
+    <div v-if="uploadedFiles.length === 0" class="text-caption text-grey-5">
+      No files uploaded yet (uploadedFiles.length = {{ uploadedFiles.length }})
     </div>
 
     <!-- Instructions for next steps -->
@@ -74,7 +81,7 @@
               flat 
               color="grey" 
               icon="bug_report" 
-              label="Debug: Show Registered Parsers"
+              label="Debug: Show Enhanced Registry"
               @click="showRegisteredParsers"
             />
           </div>
@@ -91,6 +98,7 @@ import FileUploadArea from './file-upload-area.vue'
 import FileClassificationPanel from './file-classification-panel.vue'
 import { useUniversalFileClassification } from '../composables/useUniversalFileClassification'
 import { useParserDispatcher } from '../composables/useParserDispatcher'
+import { PARSER_REGISTRY, getParserDisplayInfo, getAllParserTypes } from '../config/parserRegistry'
 
 export default {
   name: 'UniversalFileUploadHub',
@@ -136,14 +144,23 @@ export default {
 
     // Handle file uploads with enhanced classification
     const handleFilesUploaded = async (files) => {
+      console.log('🔥 Universal Hub: handleFilesUploaded called with files:', files)
+      console.log('🔥 Files array length:', files.length)
+      console.log('🔥 Files details:', Array.from(files).map(f => ({ name: f.name, size: f.size, type: f.type })))
+      
       uploading.value = true
       uploadProgress.value = 0
 
       try {
         // Add files to uploaded files list
         const newFiles = Array.from(files)
+        console.log('🔥 New files array:', newFiles.length)
+        
         const existingNames = new Set(uploadedFiles.value.map(f => f.name))
         const uniqueFiles = newFiles.filter(f => !existingNames.has(f.name))
+        
+        console.log('🔥 Unique files:', uniqueFiles.length)
+        console.log('🔥 uploadedFiles.value before:', uploadedFiles.value.length)
         
         if (uniqueFiles.length === 0) {
           Notify.create({
@@ -155,10 +172,16 @@ export default {
         }
 
         uploadedFiles.value.push(...uniqueFiles)
+        console.log('🔥 uploadedFiles.value after push:', uploadedFiles.value.length)
+        console.log('🔥 uploadedFiles.value contents:', uploadedFiles.value.map(f => f.name))
+        
         uploadProgress.value = 50
 
         // Classify the new files
+        console.log('🔥 About to classify files...')
         await classifyFiles(uniqueFiles)
+        console.log('🔥 Classification complete')
+        
         uploadProgress.value = 100
 
         Notify.create({

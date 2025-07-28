@@ -204,14 +204,22 @@ export default defineComponent({
         // Modern browsers with folder support
         console.log('Processing dropped items with folder support...')
         const files = await processDataTransferItems(items)
+        console.log('🔥 FileUploadArea: processDataTransferItems returned:', files.length, 'files')
+        console.log('🔥 FileUploadArea: files details:', files.map(f => ({ name: f.name, size: f.size, type: f.type })))
+        console.log('🔥 FileUploadArea: acceptedFormats:', props.acceptedFormats)
         
         const validFiles = files.filter(file => {
           const ext = '.' + file.name.split('.').pop().toLowerCase()
-          return props.acceptedFormats.includes(ext) || props.acceptedFormats.includes('*')
+          const isValid = props.acceptedFormats.includes(ext) || props.acceptedFormats.includes('*')
+          console.log(`🔥 FileUploadArea: File ${file.name} (${ext}) - Valid: ${isValid}`)
+          return isValid
         })
+        
+        console.log('🔥 FileUploadArea: Valid files count:', validFiles.length)
         
         if (validFiles.length > 0) {
           console.log(`Found ${validFiles.length} valid files from ${files.length} total files`)
+          console.log('🔥 FileUploadArea: About to emit files-changed with:', validFiles.map(f => f.name))
           emit('files-changed', validFiles)
         } else {
           const formatList = props.acceptedFormats.includes('*') ? 'any format' : props.acceptedFormats.join(', ')

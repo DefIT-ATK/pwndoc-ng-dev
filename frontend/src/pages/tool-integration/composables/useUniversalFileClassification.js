@@ -1,5 +1,11 @@
 import { ref, computed } from 'vue'
 import { CustomVulnerabilityRegistry } from '../../../services/custom-vulnerability-registry.js'
+import { 
+  PARSER_REGISTRY, 
+  getClassificationPatterns, 
+  getAllParserTypes,
+  getParsersByExtension 
+} from '../config/parserRegistry.js'
 
 export function useUniversalFileClassification() {
   const classificationResults = ref({})
@@ -8,106 +14,100 @@ export function useUniversalFileClassification() {
   // Initialize the registry with sophisticated heuristics
   const customRegistry = new CustomVulnerabilityRegistry()
 
-  // Enhanced parser registry incorporating sophisticated heuristics from custom-vulnerability-registry
-  const parserRegistry = {
-    nessus: {
-      name: 'Nessus',
-      priority: 1,
-      patterns: {
-        extension: ['.nessus', '.xml'],
-        filename: ['*nessus*'],
-        content: ['NessusClientData_v2', 'nessus', 'plugin_set', 'bw_prevent_plugin_updates', 
-                  'scan.enable_utf8_output', 'compliance_generate_description', '<NessusClientData', '<Policy>', '<Report>'],
-        xmlRoot: ['NessusClientData'],
-        mandatory: ['extension']
-      },
-      confidence: {
-        extension: 80,    // Very high - .nessus is very specific
-        content: 20,      // Lower since extension is so specific
-        minScore: 50
-      }
-    },
-    pingcastle: {
-      name: 'PingCastle',
-      priority: 1,
-      patterns: {
-        extension: ['.xml'],
-        filename: ['*pingcastle*', '*ping_castle*'],
-        content: ['GlobalScore', 'MaturityLevel', 'DomainFunctionalLevel', 'HealthcheckDomainController', 
-                  'DomainFQDN', 'NumberOfDC', '<healthcheck>', '<DomainKey>', 'pingcastle'],
-        xmlRoot: ['healthcheck'],
-        mandatory: ['extension']
-      },
-      confidence: {
-        extension: 20,    
-        content: 70,      
-        filename: 10,
-        minScore: 40
-      }
-    },
-    purpleknight: {
-      name: 'PurpleKnight',
-      priority: 1,
-      patterns: {
-        extension: ['.xlsx', '.xls'],
-        filename: ['*purple*', '*knight*', 'Security_Assessment_Report'],
-        content: ['Purple Knight', 'purpleknight', 'Forest Name', 'Indicators Found']
-      },
-      confidence: {
-        extension: 20,    // .xlsx is common
-        filename: 60,     // Filename is quite specific
-        content: 20,      // Additional verification
-        minScore: 40
-      }
-    },
-    acunetix: {
-      name: 'Acunetix',
-      priority: 1,
-      patterns: {
-        extension: ['.xml', '.json'],
-        filename: ['*acunetix*', '*acux*', '*_export.json'],
-        content: ['acunetix', 'vt_id', 'vulnerabilities/acx', 'acx', '<ScanGroup>', '"scanning_app":"Acunetix"'],
-        xmlRoot: ['ScanGroup']
-      },
-      confidence: {
-        extension: 10,    // Low weight since many JSON files exist
-        filename: 20,     // Low weight since _export.json is generic
-        content: 70,      // HIGH weight - this is the key differentiator
-        minScore: 40      // Require strong condition match
-      }
-    },
-    powerupsql: {
-      name: 'PowerUpSQL',
-      priority: 1,
-      patterns: {
-        extension: ['.csv', '.txt'],
-        filename: ['*powerupsql*', '*power_up_sql*', 'PowerUpSQL_Audit_Results'],
-        content: ['ComputerName,Instance,ServiceAccount', 'PowerUpSQL', 'Get-SQLInstanceDomain'],
-        mandatory: ['filename']
-      }
-    },
-    custom: {
-      name: 'Custom Parsers',
-      priority: 2,
-      patterns: {
-        extension: ['.csv', '.txt', '.json', '.xml'],
-        filename: ['*sam*', '*ntds*', '*domain*admin*', '*crack*', '*hash*', 'DA.txt', 'domain_admins.txt', 'domain_policy.json', 'enabled_users_only_hashcat'],
-        content: ['SAM File', 'NTDS', 'Domain Admins', 'password', 'hash', 'Administrator:500:aad3b435b51404eeaad3b435b51404ee', 
-                  'Dumping SAM hashes', 'SAM hashes to the database', '(Pwn3d!)', 'all_subscriptions', 'account_id', 'aad', 'storageaccounts'],
-        // Enhanced regex patterns for specific file types
-        regex: [
-          /^[^\\]+\\[^:]+:[a-fA-F0-9]{32}:.+$/m,  // Cracked passwords: domain\username:hash:password
-          /^[^\\]+\\[^:]+:[0-9]+:[a-fA-F0-9]{32}:[a-fA-F0-9]{32}:::$/m  // NTDS dump: domain\username:6563:AAD3B435B51404EEAAD3B435B51404EE:E293EA6FD1DA433BAC7A556C1B064B03:::
-        ]
-      },
-      confidence: {
-        extension: 10,    // .txt/.csv/.json are very common
-        content: 80,      // High weight for specific patterns
-        filename: 70,     // High weight for specific filenames
-        regex: 90,        // Very high weight for regex matches
-        minScore: 40
+  // Get classification patterns from centralized registry
+  const classificationPatterns = getClassificationPatterns()
+  const allParserTypes = getAllParserTypes()
+
+  console.log('🏗️ Enhanced classification system initialized with registry:', {
+    availableParsers: allParserTypes,
+    patterns: Object.keys(classificationPatterns)
+  })
+
+  /**
+   * Enhanced file extension matching using registry
+   */
+  const getExtension = (filename) => {
+    const match = filename.match(/\.([^.]+)$/)
+    return match ? `.${match[1].toLowerCase()}` : ''
+  }
+
+  /**
+   * Calculate file score using centralized registry patterns
+   */
+  const calculateFileScore = async (file, parserType) => {
+    const config = PARSER_REGISTRY[parserType]
+    if (!config) return { score: 0, reasons: [] }
+
+    const classification = config.classification
+    const reasons = []
+    let score = 0
+
+    // Extension matching
+    const extension = getExtension(file.name)
+    if (classification.mandatory?.includes('extension')) {
+      if (!config.extensions.includes(extension) && !config.extensions.includes('*')) {
+        return { score: 0, reasons: ['Required extension not matched'] }
       }
     }
+    
+    if (config.extensions.includes(extension) || config.extensions.includes('*')) {
+      score += 60 // High score for extension match
+      reasons.push(`Extension ${extension} matches`)
+    }
+
+    // Content matching
+    if (classification.content?.length > 0) {
+      try {
+        const fileContent = await readFileContent(file)
+        const contentMatches = classification.content.filter(pattern => 
+          fileContent.toLowerCase().includes(pattern.toLowerCase())
+        )
+        
+        if (contentMatches.length > 0) {
+          score += contentMatches.length * 20 // 20 points per content match
+          reasons.push(`Content matches: ${contentMatches.join(', ')}`)
+        }
+      } catch (error) {
+        console.warn(`Could not read content for ${file.name}:`, error)
+      }
+    }
+
+    // Filename pattern matching
+    const filename = file.name.toLowerCase()
+    const filenamePatterns = [
+      config.name.toLowerCase(),
+      ...config.name.toLowerCase().split(' ')
+    ]
+    
+    const filenameMatches = filenamePatterns.filter(pattern => 
+      filename.includes(pattern)
+    )
+    
+    if (filenameMatches.length > 0) {
+      score += filenameMatches.length * 15 // 15 points per filename match
+      reasons.push(`Filename contains: ${filenameMatches.join(', ')}`)
+    }
+
+    // Apply confidence weighting
+    const finalScore = Math.min(score * classification.confidence, 100)
+    
+    return {
+      score: finalScore,
+      reasons,
+      confidence: finalScore / 100
+    }
+  }
+
+  /**
+   * Read file content for analysis
+   */
+  const readFileContent = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => resolve(e.target.result)
+      reader.onerror = reject
+      reader.readAsText(file)
+    })
   }
 
   /**
@@ -117,15 +117,14 @@ export function useUniversalFileClassification() {
     classifying.value = true
     
     try {
-      const results = {
-        nessus: [],
-        pingcastle: [],
-        purpleknight: [],
-        acunetix: [],
-        powerupsql: [],
-        custom: [],
-        unrecognized: []
-      }
+      // Initialize results with all parser types from registry
+      const results = {}
+      allParserTypes.forEach(type => {
+        results[type] = []
+      })
+      results.unrecognized = []
+
+      console.log('🔍 Classifying', files.length, 'files using enhanced registry system')
 
       // Process each file
       for (const file of files) {
@@ -141,11 +140,11 @@ export function useUniversalFileClassification() {
       // Store results
       classificationResults.value = results
       
-      console.log('File classification results:', results)
+      console.log('✅ Enhanced file classification results:', results)
       return results
 
     } catch (error) {
-      console.error('Error classifying files:', error)
+      console.error('❌ Error in enhanced classification:', error)
       throw error
     } finally {
       classifying.value = false
@@ -153,157 +152,65 @@ export function useUniversalFileClassification() {
   }
 
   /**
-   * Classify a single file using sophisticated heuristics
+   * Classify a single file using enhanced registry system
    */
   const classifyFile = async (file) => {
     const results = []
     
-    // Test against each parser type
-    for (const [parserType, config] of Object.entries(parserRegistry)) {
-      const scoreResult = await calculateFileScore(file, config)
+    console.log(`🔍 Analyzing file: ${file.name}`)
+    
+    // Test against each parser type from registry
+    for (const parserType of allParserTypes) {
+      const scoreResult = await calculateFileScore(file, parserType)
       if (scoreResult.score > 0) {
         results.push({
           type: parserType,
           score: scoreResult.score,
-          confidence: scoreResult.score / 100, // Normalize to 0-1
+          confidence: scoreResult.confidence,
           reasons: scoreResult.reasons
         })
       }
     }
 
-    // Sort by score (highest first) and priority
+    // Sort by score (highest first) then by registry confidence
     results.sort((a, b) => {
       if (a.score !== b.score) {
         return b.score - a.score
       }
-      return parserRegistry[a.type].priority - parserRegistry[b.type].priority
+      // Use registry confidence as tiebreaker
+      const aConfig = PARSER_REGISTRY[a.type]
+      const bConfig = PARSER_REGISTRY[b.type]
+      return bConfig.classification.confidence - aConfig.classification.confidence
     })
 
-    // Return best match using confidence threshold from config
+    // Return best match using confidence threshold
     if (results.length > 0) {
       const bestResult = results[0]
-      const config = parserRegistry[bestResult.type]
-      const minScore = config.confidence?.minScore || 30
+      const minConfidence = 0.3 // 30% minimum confidence
       
-      if (bestResult.score >= minScore) {
+      if (bestResult.confidence >= minConfidence) {
+        console.log(`✅ Classified ${file.name} as ${bestResult.type} (${(bestResult.confidence * 100).toFixed(1)}%)`)
         return bestResult
       }
     }
 
     // No match found
+    console.log(`❓ Could not classify ${file.name} - sending to custom parser`)
     return {
-      type: 'unrecognized',
-      confidence: 0,
-      reasons: ['No matching patterns found or confidence too low']
+      type: 'custom', // Send unrecognized files to custom parser instead of unrecognized
+      confidence: 0.1,
+      reasons: ['No matching patterns found - routing to custom parser for manual processing']
     }
   }
 
   /**
-   * Calculate how well a file matches a parser type using sophisticated heuristics
+   * Pattern matching helper
    */
-  const calculateFileScore = async (file, config) => {
-    let score = 0
-    const reasons = []
-    const confidence = config.confidence || { extension: 30, filename: 25, content: 35, minScore: 30 }
-
-    // 1. Extension matching
-    const extension = '.' + file.name.split('.').pop().toLowerCase()
-    if (config.patterns.extension?.some(ext => ext.toLowerCase() === extension)) {
-      score += confidence.extension || 30
-      reasons.push(`Extension matches: ${extension}`)
-    }
-
-    // 2. Filename pattern matching
-    if (config.patterns.filename) {
-      for (const pattern of config.patterns.filename) {
-        if (matchPattern(file.name.toLowerCase(), pattern.toLowerCase())) {
-          score += confidence.filename || 25
-          reasons.push(`Filename matches pattern: ${pattern}`)
-          break
-        }
-      }
-    }
-
-    // 3. Content analysis - read file content for analysis
-    let content = ''
-    if (config.patterns.content || config.patterns.regex || config.patterns.xmlRoot) {
-      try {
-        content = await getFilePreview(file, 4096) // Read more content for better analysis
-        if (content) {
-          // Content pattern matching
-          if (config.patterns.content) {
-            let contentMatches = 0
-            for (const contentPattern of config.patterns.content) {
-              if (content.toLowerCase().includes(contentPattern.toLowerCase())) {
-                contentMatches++
-                reasons.push(`Content contains: ${contentPattern}`)
-              }
-            }
-            if (contentMatches > 0) {
-              // Score based on percentage of content patterns matched
-              const contentScore = (contentMatches / config.patterns.content.length) * (confidence.content || 35)
-              score += contentScore
-            }
-          }
-
-          // Regex pattern matching (high confidence)
-          if (config.patterns.regex) {
-            for (const regex of config.patterns.regex) {
-              if (regex.test(content)) {
-                score += confidence.regex || 90
-                reasons.push(`Content matches regex pattern`)
-                break
-              }
-            }
-          }
-
-          // XML root element matching (bonus points)
-          if (config.patterns.xmlRoot && extension === '.xml') {
-            for (const rootElement of config.patterns.xmlRoot) {
-              if (content.includes(`<${rootElement}`)) {
-                score += 10
-                reasons.push(`XML root element: ${rootElement}`)
-                break
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('Could not read file content for classification:', error)
-      }
-    }
-
-    // 4. Check mandatory requirements
-    if (config.patterns.mandatory) {
-      const mandatoryResults = config.patterns.mandatory.map(req => {
-        switch (req) {
-          case 'extension':
-            return config.patterns.extension?.some(ext => ext.toLowerCase() === extension)
-          case 'filename':
-            return config.patterns.filename?.some(pattern => 
-              matchPattern(file.name.toLowerCase(), pattern.toLowerCase())
-            )
-          case 'regex':
-            return config.patterns.regex?.some(regex => regex.test(content))
-          case 'content':
-            return config.patterns.content?.some(pattern => 
-              content.toLowerCase().includes(pattern.toLowerCase())
-            )
-          default:
-            return true
-        }
-      })
-      
-      const allMandatoryPassed = mandatoryResults.every(result => result)
-      if (!allMandatoryPassed) {
-        return { score: 0, reasons: ['Failed mandatory requirements'] }
-      }
-    }
-
-    return {
-      score: Math.min(score, 100),
-      reasons
-    }
+  const matchPattern = (text, pattern) => {
+    // Convert wildcard pattern to regex
+    const regexPattern = pattern.replace(/\*/g, '.*')
+    const regex = new RegExp(`^${regexPattern}$`, 'i')
+    return regex.test(text)
   }
 
   /**
@@ -318,19 +225,6 @@ export function useUniversalFileClassification() {
       const slice = file.slice(0, maxSize)
       reader.readAsText(slice)
     })
-  }
-
-  /**
-   * Match filename patterns (supporting wildcards)
-   */
-  const matchPattern = (text, pattern) => {
-    const regex = new RegExp(
-      pattern
-        .replace(/\*/g, '.*')
-        .replace(/\?/g, '.'),
-      'i'
-    )
-    return regex.test(text)
   }
 
   /**
@@ -373,9 +267,9 @@ export function useUniversalFileClassification() {
    * Get available parser types for manual classification
    */
   const getAvailableParserTypes = () => {
-    return Object.keys(parserRegistry).map(key => ({
+    return Object.keys(PARSER_REGISTRY).map(key => ({
       value: key,
-      label: parserRegistry[key].name
+      label: PARSER_REGISTRY[key].name
     }))
   }
 
@@ -386,7 +280,7 @@ export function useUniversalFileClassification() {
     console.log(`🔍 Debug classification for: ${file.name}`)
     
     const allScores = []
-    for (const [parserType, config] of Object.entries(parserRegistry)) {
+    for (const [parserType, config] of Object.entries(PARSER_REGISTRY)) {
       const scoreResult = await calculateFileScore(file, config)
       const minScore = config.confidence?.minScore || 30
       
@@ -426,6 +320,8 @@ export function useUniversalFileClassification() {
     reclassifyFile,
     getAvailableParserTypes,
     debugFileClassification,
-    parserRegistry
+    // Enhanced registry functions
+    allParserTypes,
+    classificationPatterns
   }
 }
