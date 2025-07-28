@@ -22,7 +22,7 @@
         
         <file-upload-area
           v-bind="uploadAreaProps"
-          @files-changed="handleFilesChanged"
+          @files-changed="handleFileChange"
           @file-removed="handleFileRemoved"
         />
         
@@ -453,7 +453,7 @@ export default {
     // Get parser dispatcher for registration
     const { registerParserInstance, unregisterParserInstance } = useParserDispatcher()
 
-    const handleFilesChanged = async (files) => {
+    const handleFileChange = async (files) => {
       customParsers.addFiles(files)
       // Get classification result from global storage (set by useCustomParsers)
       setTimeout(() => {
@@ -466,7 +466,7 @@ export default {
     // Register this parser instance for file routing
     onMounted(() => {
       registerParserInstance('custom', {
-        handleFileChange: handleFilesChanged  // Custom tab uses different method name
+        handleFileChange  // Now using standard method name
       })
     })
 
@@ -580,7 +580,7 @@ export default {
 
     return {
       ...customParsers,
-      handleFilesChanged,
+      handleFileChange,
       handleFileRemoved,
       handleClearAll,
       handleRemoveFile,

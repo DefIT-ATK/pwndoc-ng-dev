@@ -22,12 +22,8 @@ export function useGlobalFileStore() {
    * Add files to global store for a parser type
    */
   const addFilesToStore = (parserType, files) => {
-    // Debugging
-    console.log(`🔍 addFilesToStore called with:`, { parserType, files, filesType: typeof files, isArray: Array.isArray(files) })
-    
     // Defensive checks
     if (!files || !Array.isArray(files) || files.length === 0) {
-      console.log(`⚠️ Invalid files for ${parserType}:`, files)
       return false
     }
     
